@@ -13,6 +13,24 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
+  emqx:
+    image: emqx/emqx:5.8
+    container_name: pet-house-emqx
+    restart: always
+    ports:
+      - "1883:1883"       # MQTT TCP
+      - "8083:8083"       # MQTT WebSocket
+      - "8883:8883"       # MQTT SSL
+      - "18083:18083"     # EMQX Dashboard
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+    environment:
+      EMQX_NAME: pet-house-emqx
+      EMQX_HOST: 127.0.0.1
+      EMQX_LISTENERS__TCP__DEFAULT__ACCEPTORS: 8
+      EMQX_LISTENERS__TCP__DEFAULT__MAX_CONNECTIONS: 1024000
+
   app:
     build: .
     container_name: pet-house-app
@@ -20,11 +38,17 @@ services:
       - "8080:8080"
     depends_on:
       - db
+      - emqx
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/pet_house_db?serverTimezone=Asia/Seoul&createDatabaseIfNotExist=true
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      MQTT_BROKER_URL: tcp://emqx:1883
+      MQTT_USERNAME: ${MQTT_USERNAME:}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:}
 
 volumes:
   mysql_data:
+  emqx_data:
+  emqx_log:
