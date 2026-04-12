@@ -4,6 +4,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Optional;
 
@@ -13,6 +15,13 @@ public class JpaConfig {
 
     @Bean
     public AuditorAware<String> auditorProvider() {
-        return () -> Optional.of("system");         // TODO: 스프링 시큐리티로 인증 기능을 붙이게 될 때 수정
+        return () -> {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()
+                    || "anonymousUser".equals(authentication.getPrincipal())) {
+                return Optional.of("system");
+            }
+            return Optional.of(String.valueOf(authentication.getPrincipal()));
+        };
     }
 }
