@@ -41,6 +41,8 @@ public class SecurityConfig {
                         .requestMatchers("/member/register").permitAll()
                         .requestMatchers("/member/checkId").permitAll()
                         .requestMatchers("/member/find-id", "/member/verify-user", "/member/reset-password").permitAll()
+                        .requestMatchers("/device/checkMember", "/device/checkSerial").permitAll()
+                        .requestMatchers("/device/deviceTypeCodes").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
