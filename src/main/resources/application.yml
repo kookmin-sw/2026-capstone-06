@@ -1,31 +1,51 @@
-spring.application.name=pet-house-monitoring
+spring:
+  application:
+    name: pet-house-monitoring
 
-spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/pet_house_db?serverTimezone=Asia/Seoul&createDatabaseIfNotExist=true}
-spring.datasource.username=${DB_USERNAME}
-spring.datasource.password=${DB_PASSWORD}
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/pet_house_db?serverTimezone=Asia/Seoul&createDatabaseIfNotExist=true}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      initialization-fail-timeout: 60000
 
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_size: 100
 
-server.servlet.context-path=/api
-
-spring.jpa.properties.hibernate.default_batch_size=100
-spring.datasource.hikari.initialization-fail-timeout=60000
+server:
+  servlet:
+    context-path: /api
 
 # JWT
-jwt.secret=${JWT_SECRET:dGVzdC1zZWNyZXQta2V5LXRoYXQtaXMtYXQtbGVhc3QtMzItYnl0ZXMtbG9uZyEh}
-jwt.access-token-expiry=1800000
-jwt.refresh-token-expiry=1209600000
+jwt:
+  secret: ${JWT_SECRET:dGVzdC1zZWNyZXQta2V5LXRoYXQtaXMtYXQtbGVhc3QtMzItYnl0ZXMtbG9uZyEh}
+  access-token-expiry: 1800000
+  refresh-token-expiry: 1209600000
 
 # MQTT (EMQX)
-mqtt.broker.url=${MQTT_BROKER_URL:tcp://localhost:1883}
-mqtt.client.id=pet-house-server-${random.uuid}
-mqtt.username=${MQTT_USERNAME:}
-mqtt.password=${MQTT_PASSWORD:}
-mqtt.default-qos=1
-mqtt.keep-alive-interval=60
-mqtt.connection-timeout=30
-mqtt.auto-reconnect=true
-mqtt.clean-session=true
+mqtt:
+  broker:
+    url: ${MQTT_BROKER_URL:tcp://localhost:1883}
+  client:
+    id: pet-house-server-${random.uuid}
+  username: ${MQTT_USERNAME:}
+  password: ${MQTT_PASSWORD:}
+  default-qos: 1
+  keep-alive-interval: 60
+  connection-timeout: 30
+  auto-reconnect: true
+  clean-session: true
+
+# InfluxDB
+influxdb:
+  url: ${INFLUXDB_URL:http://localhost:8086}
+  token: ${INFLUXDB_TOKEN}
+  org: ${INFLUXDB_ORG:your-org-name}
+  bucket: ${INFLUXDB_BUCKET:your-bucket-name}
