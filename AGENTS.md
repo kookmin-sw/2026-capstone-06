@@ -19,10 +19,10 @@ com.capstone.pethouse
 │   ├── code/          # 병원 진료 과목 코드
 │   ├── device/        # PetHouse CRUD, 프로비저닝
 │   ├── enums/         # enum 타입들
-│   ├── User/          # 회원 CRUD (MemberController, MemberService)
-│   ├── sensor/        # 센서 데이터 수집/조회
-│   ├── camera/        # WebRTC, HLS, PTZ, 녹화
 │   ├── fan/           # 팬 스케줄 (구현 완료)
+│   ├── User/          # 회원 CRUD (MemberController, MemberService)
+│   ├── hospital/      # 병원 CRUD
+│   ├── serial/        # 시리얼 통신
 │   ├── supply/        # 급식/급수 스케줄 (구현 완료)
 │   └── User/          # (User 패키지는 위 참조)
 ├── global
@@ -30,7 +30,7 @@ com.capstone.pethouse
 │   ├── config/        # SecurityConfig, MqttConfig, WebSocketConfig 등
 │   └── error/         # 예외 처리
 └── infra
-└── mqtt/          # MqttPublisher, MqttSubscriber, 토픽 관리
+    └── mqtt/          # MqttPublisher, MqttSubscriber, 토픽 관리
 
 ## Code Conventions: 
 - 엔티티: of() 정적 팩토리 메서드 사용, @NoArgsConstructor(access = PROTECTED)
@@ -55,6 +55,7 @@ com.capstone.pethouse
 ## Context Management
 모든 작업 세션이 끝나거나 중요한 변경 사항이 있을 때, context/current_status.md를 업데이트하여 현재 진행 상황을 요약한다.
 작업 중 발견한 특이사항이나 기록해둘 만한 기술적 노트는 context/ 폴더에 자유롭게 기록한다.
+파일 이름은 "context-001-YYYYMMDD.md"와 같이 날짜를 포함한다.
 
 ## ADR (Architecture Decision Records)
 프로젝트의 주요 기술적 결정 사항은 docs/adr/ 폴더에 마크다운 파일로 기록한다.
