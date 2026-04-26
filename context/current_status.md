@@ -7,9 +7,10 @@
 - **[2026-04-26]** Implemented `/api/dashboard/*` endpoints based on the `대시보드 데이터_DataAPI명세` API doc (Todo 002).
 - **[2026-04-26]** Built `DashboardController` and `DashboardService` integrating `Device`, `Serial`, and `Code` domains.
 - **[2026-04-26]** Integrated `InfluxDBClient` into newly created `DashboardSensorRepository` for active queries against the Influx sensor data timeseries.
+- **[2026-04-26]** Implemented `/api/code/*` API module for hierarchical data categories (Todo 003). Recycled existing Entity and injected recursive map logic for tree rendering using CamelCase representations natively.
 
 ## Next Steps
 - Waiting for next `todo/` assignment.
-- Build Integration tests for `DashboardController` and `DashboardService`.
+- Build Integration tests for `CodeController`.
 - Address any InfluxDB bucket/schema adjustments once IoT publishing (Task-4) begins testing.
 - Continue ensuring `PET_API명세.xlsx` syncs with entity constraints.

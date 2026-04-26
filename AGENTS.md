@@ -19,10 +19,17 @@ com.capstone.pethouse
 │   ├── code/          # 병원 진료 과목 코드
 │   ├── device/        # PetHouse CRUD, 프로비저닝
 │   ├── enums/         # enum 타입들
+<<<<<<< Updated upstream
 │   ├── fan/           # 팬 스케줄 (구현 완료)
 │   ├── User/          # 회원 CRUD (MemberController, MemberService)
 │   ├── hospital/      # 병원 CRUD
 │   ├── serial/        # 시리얼 통신
+=======
+│   ├── User/          # 회원 CRUD (MemberController, MemberService)
+│   ├── sensor/        # 센서 데이터 수집/조회
+│   ├── camera/        # WebRTC, HLS, PTZ, 녹화
+│   ├── fan/           # 팬 스케줄 (구현 완료)
+>>>>>>> Stashed changes
 │   ├── supply/        # 급식/급수 스케줄 (구현 완료)
 │   └── User/          # (User 패키지는 위 참조)
 ├── global
@@ -30,7 +37,11 @@ com.capstone.pethouse
 │   ├── config/        # SecurityConfig, MqttConfig, WebSocketConfig 등
 │   └── error/         # 예외 처리
 └── infra
+<<<<<<< Updated upstream
     └── mqtt/          # MqttPublisher, MqttSubscriber, 토픽 관리
+=======
+└── mqtt/          # MqttPublisher, MqttSubscriber, 토픽 관리
+>>>>>>> Stashed changes
 
 ## Code Conventions: 
 - 엔티티: of() 정적 팩토리 메서드 사용, @NoArgsConstructor(access = PROTECTED)
@@ -46,6 +57,7 @@ com.capstone.pethouse
 - User/ - 회원 CRUD 14개 API (가입, 목록, 상세, 수정, 삭제, 아이디찾기, 비밀번호 초기화 등)
 
 ## API 명세 (반드시 참조)
+<<<<<<< Updated upstream
 모든 API 구현은 PET_API명세.xlsx (/Pet-House-Monitoring/document/api.xlsx)를 기준으로 한다.
 
 ## 작업 프로세스
@@ -83,3 +95,6 @@ com.capstone.pethouse
 - 모든 코드 변경은 기존 fan/, supply/, auth/ 등 기존 작성된 패키지의 로직을 파괴하지 않는 범위 내에서 이루어져야 한다.
 - todo/에 정의되지 않은 작업을 임의로 수행하지 않는다.
 - 중요: CLAUDE.md 파일은 동료의 설정 파일이므로 절대 수정하거나 삭제하지 않는다.
+=======
+모든 API 구현은 PET_API명세.xlsx (/Pet-House-Monitoring/document/api.xlsx)를 기준으로 한다.
+>>>>>>> Stashed changes
