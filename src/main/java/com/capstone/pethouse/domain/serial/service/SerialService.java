@@ -26,7 +26,7 @@ public class SerialService {
     @Transactional(readOnly = true)
     public Page<SerialVo> getSerials(String searchQuery, Pageable pageable) {
         String cleanedQuery = (searchQuery != null && !searchQuery.isBlank()) ? searchQuery : null;
-        
+
         return serialRepository.findAllWithSearch(cleanedQuery, pageable).map(SerialVo::from);
     }
 

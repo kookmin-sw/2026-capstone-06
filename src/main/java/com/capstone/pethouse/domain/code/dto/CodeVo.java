@@ -21,7 +21,7 @@ public record CodeVo(
                 code.getGroupCode(),
                 code.getCodeName(),
                 code.getRegDate().format(FORMATTER),
-                new ArrayList<>()
+                List.of()
         );
     }
 
