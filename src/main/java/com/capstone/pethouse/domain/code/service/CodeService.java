@@ -7,6 +7,7 @@ import com.capstone.pethouse.domain.code.repository.CodeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,20 +22,12 @@ public class CodeService {
     private final CodeRepository codeRepository;
 
     @Transactional(readOnly = true)
-    public List<CodeVo> getCodes(int pageNum, int pageSize, String groupCode) {
-        int page = Math.max(0, pageNum - 1);
-        PageRequest pageRequest = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "regDate"));
-        Page<Code> codePage;
+    public Page<CodeVo> getCodes(Pageable pageable, String groupCode) {
+        Page<Code> codePage = (groupCode != null && !groupCode.isBlank())
+                ? codeRepository.findByGroupCode(groupCode, pageable)
+                : codeRepository.findAll(pageable);
 
-        if (groupCode != null && !groupCode.isEmpty()) {
-            codePage = codeRepository.findByGroupCode(groupCode, pageRequest);
-        } else {
-            codePage = codeRepository.findAll(pageRequest);
-        }
-
-        return codePage.getContent().stream()
-                .map(code -> CodeVo.withChildren(code, List.of()))
-                .collect(Collectors.toList());
+        return codePage.map(CodeVo::from);
     }
 
     @Transactional(readOnly = true)
