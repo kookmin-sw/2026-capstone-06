@@ -5,6 +5,9 @@ import com.capstone.pethouse.domain.User.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,11 +23,10 @@ public class MemberController {
 
     @GetMapping("/list")
     public ResponseEntity<Page<MemberResponse>> list(
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "15") int pageSize,
+            @PageableDefault(size = 15, sort = "seq", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String searchType,
             @RequestParam(required = false) String searchQuery) {
-        return ResponseEntity.ok(memberService.getMembers(pageNum, pageSize));
+        return ResponseEntity.ok(memberService.getMembers(searchType, searchQuery, pageable));
     }
 
     @PostMapping("/register")

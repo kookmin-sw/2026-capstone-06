@@ -5,6 +5,9 @@ import com.capstone.pethouse.domain.serial.dto.SerialVo;
 import com.capstone.pethouse.domain.serial.service.SerialService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,10 +24,9 @@ public class SerialController {
 
     @GetMapping("/list")
     public ResponseEntity<Page<SerialVo>> list(
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "15") int pageSize,
+            @PageableDefault(size = 15, sort = "regDate", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String searchQuery) {
-        return ResponseEntity.ok(serialService.getSerials(pageNum, pageSize, searchQuery));
+        return ResponseEntity.ok(serialService.getSerials(searchQuery, pageable));
     }
 
     @GetMapping("/{seq}")
