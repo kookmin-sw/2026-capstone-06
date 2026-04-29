@@ -3,6 +3,7 @@ package com.capstone.pethouse.domain.code.controller;
 import com.capstone.pethouse.domain.code.dto.CodeRequest;
 import com.capstone.pethouse.domain.code.dto.CodeVo;
 import com.capstone.pethouse.domain.code.service.CodeService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,7 +39,7 @@ public class CodeController {
     public ResponseEntity<?> getCode(@PathVariable String id) {
         try {
             return ResponseEntity.ok(codeService.getCode(id));
-        } catch (IllegalArgumentException e) {
+        } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }

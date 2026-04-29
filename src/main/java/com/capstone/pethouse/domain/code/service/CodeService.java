@@ -4,9 +4,9 @@ import com.capstone.pethouse.domain.code.dto.CodeRequest;
 import com.capstone.pethouse.domain.code.dto.CodeVo;
 import com.capstone.pethouse.domain.code.entity.Code;
 import com.capstone.pethouse.domain.code.repository.CodeRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -58,10 +58,9 @@ public class CodeService {
     @Transactional(readOnly = true)
     public CodeVo getCode(String id) {
         Code code = codeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("코드를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("코드를 찾을 수 없습니다."));
 
-        List<Code> allCodes = codeRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
-        return mapToTree(code, allCodes);
+        return CodeVo.from(code);
     }
 
     @Transactional(readOnly = true)
