@@ -7,6 +7,7 @@ import com.capstone.pethouse.domain.serial.repository.SerialRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,9 +24,10 @@ public class SerialService {
     private final SerialRepository serialRepository;
 
     @Transactional(readOnly = true)
-    public Page<SerialVo> getSerials(int pageNum, int pageSize, String searchQuery) {
-        PageRequest pageRequest = PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.DESC, "regDate"));
-        return serialRepository.findAllWithSearch(searchQuery, pageRequest).map(SerialVo::from);
+    public Page<SerialVo> getSerials(String searchQuery, Pageable pageable) {
+        String cleanedQuery = (searchQuery != null && !searchQuery.isBlank()) ? searchQuery : null;
+        
+        return serialRepository.findAllWithSearch(cleanedQuery, pageable).map(SerialVo::from);
     }
 
     @Transactional(readOnly = true)

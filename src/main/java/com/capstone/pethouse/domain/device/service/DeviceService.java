@@ -10,6 +10,7 @@ import com.capstone.pethouse.domain.serial.repository.SerialRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,9 +29,10 @@ public class DeviceService {
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
-    public Page<DeviceVo> getDevices(int pageNum, int pageSize, String searchType, String searchQuery) {
-        PageRequest pageRequest = PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.DESC, "regDate"));
-        return deviceRepository.findAllWithSearch(searchType, searchQuery, pageRequest).map(DeviceVo::from);
+    public Page<DeviceVo> getDevices(String searchType, String searchQuery, Pageable pageable) {
+        String cleanedQuery = (searchQuery != null && !searchQuery.isBlank()) ? searchQuery : null;
+
+        return deviceRepository.findAllWithSearch(searchType, cleanedQuery, pageable).map(DeviceVo::from);
     }
 
     @Transactional(readOnly = true)

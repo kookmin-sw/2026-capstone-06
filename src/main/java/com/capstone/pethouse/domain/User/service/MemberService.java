@@ -7,6 +7,7 @@ import com.capstone.pethouse.domain.enums.RoleType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,13 @@ public class MemberService {
     public Page<MemberResponse> getMembers(int pageNum, int pageSize) {
         PageRequest pageRequest = PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.DESC, "seq"));
         return userRepository.findAll(pageRequest).map(MemberResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MemberResponse> getMembers(String searchType, String searchQuery, Pageable pageable) {
+        String cleanedQuery = (searchQuery != null && !searchQuery.isBlank()) ? searchQuery : null;
+
+        return userRepository.findAllWithSearch(searchType, cleanedQuery, pageable).map(MemberResponse::from);
     }
 
     @Transactional
