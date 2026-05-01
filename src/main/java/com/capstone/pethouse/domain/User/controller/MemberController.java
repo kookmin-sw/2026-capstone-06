@@ -30,33 +30,21 @@ public class MemberController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody MemberRequest request) {
-        try {
-            MemberResponse response = memberService.register(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<MemberResponse> register(@RequestBody MemberRequest request) {
+        MemberResponse response = memberService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/form")
-    public ResponseEntity<?> registerByAdmin(@RequestBody MemberRequest request) {
-        try {
-            MemberResponse response = memberService.registerByAdmin(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<MemberResponse> registerByAdmin(@RequestBody MemberRequest request) {
+        MemberResponse response = memberService.registerByAdmin(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/form")
-    public ResponseEntity<?> updateByAdmin(@RequestBody MemberRequest request) {
-        try {
-            MemberResponse response = memberService.updateByAdmin(request);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<MemberResponse> updateByAdmin(@RequestBody MemberRequest request) {
+        MemberResponse response = memberService.updateByAdmin(request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/form/{seq}")
@@ -78,13 +66,9 @@ public class MemberController {
     }
 
     @PutMapping
-    public ResponseEntity<?> updateMember(@RequestBody MemberRequest request) {
-        try {
-            MemberResponse response = memberService.updateMember(request);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<MemberResponse> updateMember(@RequestBody MemberRequest request) {
+        MemberResponse response = memberService.updateMember(request);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping

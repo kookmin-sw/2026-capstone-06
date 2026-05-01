@@ -49,22 +49,14 @@ public class DashboardController {
 
     @PutMapping("/device/{deviceId}")
     public ResponseEntity<MessageRes> updateDevice(@PathVariable String deviceId, @RequestBody DeviceUpdateReq request) {
-        try {
-            dashboardService.updateDevice(deviceId, request);
-            return ResponseEntity.ok(new MessageRes("수정 완료"));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new MessageRes(e.getMessage()));
-        }
+        dashboardService.updateDevice(deviceId, request);
+        return ResponseEntity.ok(new MessageRes("수정 완료"));
     }
 
     @DeleteMapping("/device/{deviceId}")
     public ResponseEntity<MessageRes> deleteDevice(@PathVariable String deviceId) {
-        try {
-            dashboardService.deleteDevice(deviceId);
-            return ResponseEntity.ok(new MessageRes("삭제 완료"));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new MessageRes("장치를 찾을 수 없습니다."));
-        }
+        dashboardService.deleteDevice(deviceId);
+        return ResponseEntity.ok(new MessageRes("삭제 완료"));
     }
 
     @GetMapping("/device/checkSerial")
@@ -74,11 +66,7 @@ public class DashboardController {
 
     @GetMapping("/device/{deviceId}")
     public ResponseEntity<DeviceRes> getDeviceDetail(@PathVariable String deviceId) {
-        try {
-            return ResponseEntity.ok(dashboardService.getDeviceDetail(deviceId));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(dashboardService.getDeviceDetail(deviceId));
     }
 
     @GetMapping("/device/codes")

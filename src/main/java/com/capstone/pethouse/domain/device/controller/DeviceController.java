@@ -34,32 +34,20 @@ public class DeviceController {
     }
 
     @GetMapping("/{seq}")
-    public ResponseEntity<?> getDevice(@PathVariable Long seq) {
-        try {
-            return ResponseEntity.ok(deviceService.getDevice(seq));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<DeviceVo> getDevice(@PathVariable Long seq) {
+        return ResponseEntity.ok(deviceService.getDevice(seq));
     }
 
     @PostMapping
-    public ResponseEntity<?> createDevice(@RequestBody DeviceRequest request) {
-        try {
-            DeviceVo response = deviceService.createDevice(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<DeviceVo> createDevice(@RequestBody DeviceRequest request) {
+        DeviceVo response = deviceService.createDevice(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping
-    public ResponseEntity<?> updateDevice(@RequestBody DeviceRequest request) {
-        try {
-            DeviceVo response = deviceService.updateDevice(request);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<DeviceVo> updateDevice(@RequestBody DeviceRequest request) {
+        DeviceVo response = deviceService.updateDevice(request);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{seq}")

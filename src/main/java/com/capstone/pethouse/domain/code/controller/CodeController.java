@@ -36,41 +36,27 @@ public class CodeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getCode(@PathVariable String id) {
-        try {
-            return ResponseEntity.ok(codeService.getCode(id));
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+    public ResponseEntity<CodeVo> getCode(@PathVariable String id) {
+        return ResponseEntity.ok(codeService.getCode(id));
     }
 
     @PostMapping
-    public ResponseEntity<?> createCode(@RequestBody CodeRequest request) {
-        try {
-            CodeVo response = codeService.createCode(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-        }
+    public ResponseEntity<CodeVo> createCode(@RequestBody CodeRequest request) {
+        CodeVo response = codeService.createCode(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping
-    public ResponseEntity<?> updateCode(@RequestBody CodeRequest request) {
-        try {
-            CodeVo response = codeService.updateCode(request);
-            return ResponseEntity.ok(response);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+    public ResponseEntity<CodeVo> updateCode(@RequestBody CodeRequest request) {
+        CodeVo response = codeService.updateCode(request);
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCode(@PathVariable String id) {
-        try {
-            codeService.deleteCode(id);
-            return ResponseEntity.noContent().build();      // 204
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();       // 404
-        }
+        codeService.deleteCode(id);
+        return ResponseEntity.noContent().build();
     }
 }

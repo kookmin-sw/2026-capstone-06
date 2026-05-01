@@ -21,26 +21,18 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginWeb(@Valid @RequestBody LoginRequest request) {
-        try {
-            TokenResponse response = authService.loginWeb(request);
-            return ResponseEntity.ok(Map.of("message", response.message(), "role", response.role()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(401).body(Map.of("error", "로그인 실패"));
-        }
+    public ResponseEntity<Map<String, String>> loginWeb(@Valid @RequestBody LoginRequest request) {
+        TokenResponse response = authService.loginWeb(request);
+        return ResponseEntity.ok(Map.of("message", response.message(), "role", response.role()));
     }
 
     @PostMapping("/login-app")
-    public ResponseEntity<?> loginApp(@Valid @RequestBody LoginRequest request) {
-        try {
-            TokenResponse response = authService.loginApp(request);
-            return ResponseEntity.ok(Map.of(
-                    "message", response.message(),
-                    "role", response.role(),
-                    "accessToken", response.accessToken()
-            ));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(401).body(Map.of("error", "로그인 실패"));
-        }
+    public ResponseEntity<Map<String, String>> loginApp(@Valid @RequestBody LoginRequest request) {
+        TokenResponse response = authService.loginApp(request);
+        return ResponseEntity.ok(Map.of(
+                "message", response.message(),
+                "role", response.role(),
+                "accessToken", response.accessToken()
+        ));
     }
 }
