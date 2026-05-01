@@ -73,25 +73,29 @@ public class CodeService {
     @Transactional
     public CodeVo createCode(CodeRequest request) {
         if (codeRepository.existsById(request.code())) {
-            throw new IllegalArgumentException("이미 존재하는 코드입니다.");
+            throw new IllegalStateException("이미 존재하는 코드입니다.");
         }
-        Code code = Code.of(request.code(), request.groupCode() != null ? request.groupCode() : "", request.codeName());
+        Code code = Code.of(
+                request.code(),
+                request.groupCode(),
+                request.codeName()
+        );
         return CodeVo.from(codeRepository.save(code));
     }
 
     @Transactional
     public CodeVo updateCode(CodeRequest request) {
         Code code = codeRepository.findById(request.code())
-                .orElseThrow(() -> new IllegalArgumentException("코드를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("코드를 찾을 수 없습니다."));
         code.update(request.groupCode(), request.codeName());
         return CodeVo.from(code);
     }
 
     @Transactional
     public void deleteCode(String id) {
-        if (!codeRepository.existsById(id)) {
-            throw new IllegalArgumentException("코드를 찾을 수 없습니다.");
-        }
-        codeRepository.deleteById(id);
+        Code code = codeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("코드를 찾을 수 없습니다."));
+
+        codeRepository.delete(code);
     }
 }
