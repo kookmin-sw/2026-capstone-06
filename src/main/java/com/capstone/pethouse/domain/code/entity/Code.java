@@ -21,7 +21,6 @@ public class Code {
     @Column(nullable = false, unique = true)
     private String code;
 
-    @Column(nullable = false)
     private String groupCode;
 
     @Column(nullable = false)
