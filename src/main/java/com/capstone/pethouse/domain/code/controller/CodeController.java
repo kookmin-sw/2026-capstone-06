@@ -49,7 +49,7 @@ public class CodeController {
         try {
             CodeVo response = codeService.createCode(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
@@ -59,8 +59,8 @@ public class CodeController {
         try {
             CodeVo response = codeService.updateCode(request);
             return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 
@@ -68,9 +68,9 @@ public class CodeController {
     public ResponseEntity<Void> deleteCode(@PathVariable String id) {
         try {
             codeService.deleteCode(id);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.noContent().build();      // 204
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();       // 404
         }
     }
 }
