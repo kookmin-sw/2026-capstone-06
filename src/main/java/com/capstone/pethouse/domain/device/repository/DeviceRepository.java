@@ -20,7 +20,7 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
 
     boolean existsByDeviceId(String deviceId);
 
-    @Query("SELECT d FROM Device d WHERE " +
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.petHouse WHERE " +
             "(:searchQuery IS NULL OR " +
             " (:searchType = 'deviceId' AND d.deviceId LIKE %:searchQuery%) OR " +
             " (:searchType = 'memberId' AND d.memberId LIKE %:searchQuery%) OR " +
