@@ -9,7 +9,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @ToString(callSuper = true)
@@ -49,26 +52,48 @@ public class PetHouse extends AuditingFields {
     @Column(nullable = false)
     private LocalDateTime lastConnectedAt;
 
-    private PetHouse(User user, String nickname, PetHouseStatus petHouseStatus, Boolean isOccupied, LocalDateTime lastConnectedAt) {
+    private String objectCode;
+
+    private String objectName;
+
+    private LocalDate objectBirth;
+
+    @ToString.Exclude
+    @OneToMany(mappedBy = "petHouse", cascade = CascadeType.ALL)
+    private List<Device> devices = new ArrayList<>();
+
+    private PetHouse(User user, String nickname, PetHouseStatus petHouseStatus, Boolean isOccupied, LocalDateTime lastConnectedAt, String objectCode, String objectName, java.time.LocalDate objectBirth) {
         this.user = user;
         this.nickname = nickname;
         this.petHouseStatus = petHouseStatus;
         this.isOccupied = isOccupied;
         this.lastConnectedAt = lastConnectedAt;
+        this.objectCode = objectCode;
+        this.objectName = objectName;
+        this.objectBirth = objectBirth;
     }
 
-    public static PetHouse of(User user, String nickname, PetHouseStatus petHouseStatus, Boolean isOccupied, LocalDateTime lastConnectedAt) {
-        return new PetHouse(user, nickname, petHouseStatus, isOccupied, lastConnectedAt);
+    public static PetHouse of(User user, String nickname, PetHouseStatus petHouseStatus, Boolean isOccupied, LocalDateTime lastConnectedAt, String objectCode, String objectName, java.time.LocalDate objectBirth) {
+        return new PetHouse(user, nickname, petHouseStatus, isOccupied, lastConnectedAt, objectCode, objectName, objectBirth);
     }
 
-    public static PetHouse createDefault(User user, String nickname) {
+    public static PetHouse createDefault(User user, String nickname, String objectCode, String objectName, LocalDate objectBirth) {
         return new PetHouse(
                 user,
                 nickname,
                 PetHouseStatus.OFFLINE,
                 false,
-                LocalDateTime.now()
+                LocalDateTime.now(),
+                objectCode,
+                objectName,
+                objectBirth
         );
+    }
+
+    public void updatePetInfo(String objectCode, String objectName, LocalDate objectBirth) {
+        if (objectCode != null) this.objectCode = objectCode;
+        if (objectName != null) this.objectName = objectName;
+        if (objectBirth != null) this.objectBirth = objectBirth;
     }
 
     @Override
