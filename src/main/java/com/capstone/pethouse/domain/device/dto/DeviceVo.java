@@ -1,6 +1,7 @@
 package com.capstone.pethouse.domain.device.dto;
 
 import com.capstone.pethouse.domain.device.entity.Device;
+import com.capstone.pethouse.domain.device.entity.PetHouse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.format.DateTimeFormatter;
@@ -13,7 +14,6 @@ public record DeviceVo(
         String objectCode,
         String objectName,
         String deviceType,
-        String deviceTypeName,
         String objectBirth,
         @JsonProperty("isUse") boolean isUse,
         String regDate
@@ -22,16 +22,16 @@ public record DeviceVo(
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static DeviceVo from(Device device) {
+        PetHouse petHouse = device.getPetHouse();
         return new DeviceVo(
                 device.getSeq(),
                 device.getDeviceId(),
                 device.getMemberId(),
                 device.getSerialNum(),
-                device.getObjectCode(),
-                device.getObjectName(),
+                petHouse != null ? petHouse.getObjectCode() : null,
+                petHouse != null ? petHouse.getObjectName() : null,
                 device.getDeviceType(),
-                device.getDeviceTypeName(),
-                device.getObjectBirth() != null ? device.getObjectBirth().format(DATE_FORMATTER) : null,
+                (petHouse != null && petHouse.getObjectBirth() != null) ? petHouse.getObjectBirth().format(DATE_FORMATTER) : null,
                 device.isUse(),
                 device.getRegDate().format(DATETIME_FORMATTER)
         );
