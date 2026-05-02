@@ -4,6 +4,7 @@ import com.capstone.pethouse.domain.User.entity.User;
 import com.capstone.pethouse.domain.User.repository.UserRepository;
 import com.capstone.pethouse.domain.User.dto.*;
 import com.capstone.pethouse.domain.enums.RoleType;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,12 +20,6 @@ public class MemberService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    @Transactional(readOnly = true)
-    public Page<MemberResponse> getMembers(int pageNum, int pageSize) {
-        PageRequest pageRequest = PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.DESC, "seq"));
-        return userRepository.findAll(pageRequest).map(MemberResponse::from);
-    }
 
     @Transactional(readOnly = true)
     public Page<MemberResponse> getMembers(String searchType, String searchQuery, Pageable pageable) {
@@ -66,9 +61,9 @@ public class MemberService {
     }
 
     @Transactional
-    public MemberResponse updateByAdmin(MemberRequest request) {
+    public MemberResponse updateMember(MemberRequest request) {
         User user = userRepository.findById(request.seq())
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
         String encodedPw = (request.memberPw() != null && !request.memberPw().isBlank())
                 ? passwordEncoder.encode(request.memberPw()) : null;
@@ -78,16 +73,23 @@ public class MemberService {
         return MemberResponse.from(user);
     }
 
+    @Transactional
+    public MemberResponse updateByAdmin(MemberRequest request) {
+        return updateMember(request);
+    }
+
     @Transactional(readOnly = true)
     public MemberResponse getMemberBySeq(Long seq) {
-        User user = userRepository.findById(seq).orElse(null);
-        return user != null ? MemberResponse.from(user) : null;
+        User user = userRepository.findById(seq)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+        return MemberResponse.from(user);
     }
 
     @Transactional(readOnly = true)
     public MemberSimpleResponse getMemberByMemberId(String memberId) {
-        User user = userRepository.findByMemberId(memberId).orElse(null);
-        return user != null ? MemberSimpleResponse.from(user) : null;
+        User user = userRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+        return MemberSimpleResponse.from(user);
     }
 
     @Transactional(readOnly = true)
@@ -95,26 +97,19 @@ public class MemberService {
         return !userRepository.existsByMemberId(memberId);
     }
 
-    @Transactional
-    public MemberResponse updateMember(MemberRequest request) {
-        User user = userRepository.findById(request.seq())
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
-
-        String encodedPw = (request.memberPw() != null && !request.memberPw().isBlank())
-                ? passwordEncoder.encode(request.memberPw()) : null;
-        RoleType roleCode = request.roleCode() != null ? RoleType.valueOf(request.roleCode()) : null;
-
-        user.update(encodedPw, request.memberName(), request.memberPhone(), roleCode);
-        return MemberResponse.from(user);
-    }
 
     @Transactional
-    public void deleteMember(Long seq, String memberId) {
+    public void deleteMember(MemberDeleteRequest request) {
+        Long seq = request.seq();
+        String memberId = request.memberId();
+
         if (seq != null) {
-            userRepository.deleteById(seq);
+            User user = userRepository.findById(seq)
+                    .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+            userRepository.delete(user);
         } else if (memberId != null) {
             User user = userRepository.findByMemberId(memberId)
-                    .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                    .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
             userRepository.delete(user);
         } else {
             throw new IllegalArgumentException("seq 또는 member_id가 필요합니다.");

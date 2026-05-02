@@ -130,10 +130,13 @@ class MemberServiceTest {
     @Test
     @DisplayName("회원 삭제")
     void deleteMember() {
+        String targetId = "user01";
+        MemberDeleteRequest request = new MemberDeleteRequest(null, targetId);
         User user = createTestUser();
-        given(userRepository.findByMemberId("user01")).willReturn(Optional.of(user));
 
-        memberService.deleteMember(null, "user01");
+        given(userRepository.findByMemberId(targetId)).willReturn(Optional.of(user));
+
+        memberService.deleteMember(request);
 
         verify(userRepository).delete(user);
     }
