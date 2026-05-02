@@ -35,42 +35,38 @@ public class SerialController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<String> addSerial(@RequestBody SerialRequest request) {
+    public ResponseEntity<?> addSerial(@RequestBody SerialRequest request) {
         String message = serialService.addSerial(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(message);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", message));
     }
 
     @PutMapping("/update")
-    public ResponseEntity<String> updateSerial(@RequestBody SerialRequest request) {
+    public ResponseEntity<?> updateSerial(@RequestBody SerialRequest request) {
         String message = serialService.updateSerial(request);
-        return ResponseEntity.ok(message);
+        return ResponseEntity.ok(Map.of("message", message));
     }
 
     @DeleteMapping("/delete/{seq}")
-    public ResponseEntity<String> deleteSerial(@PathVariable Long seq) {
+    public ResponseEntity<?> deleteSerial(@PathVariable Long seq) {
         String message = serialService.deleteSerial(seq);
-        return ResponseEntity.ok(message);
+        return ResponseEntity.ok(Map.of("message", message));
     }
 
     @PutMapping("/use/{serialNum}")
-    public ResponseEntity<String> markAsUsed(@PathVariable String serialNum) {
+    public ResponseEntity<?> markAsUsed(@PathVariable String serialNum) {
         String message = serialService.markAsUsed(serialNum);
-        return ResponseEntity.ok(message);
+        return ResponseEntity.ok(Map.of("message", message));
     }
 
     @PutMapping("/release/{serialNum}")
-    public ResponseEntity<String> markAsUnused(@PathVariable String serialNum) {
+    public ResponseEntity<?> markAsUnused(@PathVariable String serialNum) {
         String message = serialService.markAsUnused(serialNum);
-        return ResponseEntity.ok(message);
+        return ResponseEntity.ok(Map.of("message", message));
     }
 
     @PostMapping("/generate")
-    public ResponseEntity<?> generateSerials(@RequestParam int count) {
-        try {
-            List<SerialVo> result = serialService.generateSerials(count);
-            return ResponseEntity.status(HttpStatus.CREATED).body(result);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<List<SerialVo>> generateSerials(@RequestParam int count) {
+        List<SerialVo> result = serialService.generateSerials(count);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 }
