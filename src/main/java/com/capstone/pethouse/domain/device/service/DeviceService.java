@@ -1,22 +1,22 @@
 package com.capstone.pethouse.domain.device.service;
 
 import com.capstone.pethouse.domain.User.repository.UserRepository;
+import com.capstone.pethouse.domain.device.dto.DevicePopupResponse;
 import com.capstone.pethouse.domain.device.dto.DeviceRequest;
 import com.capstone.pethouse.domain.device.dto.DeviceVo;
 import com.capstone.pethouse.domain.device.entity.Device;
+import com.capstone.pethouse.domain.device.entity.PetHouse;
 import com.capstone.pethouse.domain.device.repository.DeviceRepository;
+import com.capstone.pethouse.domain.device.repository.PetHouseRepository;
 import com.capstone.pethouse.domain.serial.entity.Serial;
 import com.capstone.pethouse.domain.serial.repository.SerialRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +27,7 @@ public class DeviceService {
     private final DeviceRepository deviceRepository;
     private final SerialRepository serialRepository;
     private final UserRepository userRepository;
+    private final PetHouseRepository petHouseRepository;
 
     @Transactional(readOnly = true)
     public Page<DeviceVo> getDevices(String searchType, String searchQuery, Pageable pageable) {
@@ -38,7 +39,8 @@ public class DeviceService {
     @Transactional(readOnly = true)
     public DeviceVo getDevice(Long seq) {
         Device device = deviceRepository.findById(seq)
-                .orElseThrow(() -> new IllegalArgumentException("장치를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("장치를 찾을 수 없습니다."));
+
         return DeviceVo.from(device);
     }
 
@@ -46,19 +48,30 @@ public class DeviceService {
     public DeviceVo createDevice(DeviceRequest request) {
         Serial serial = serialRepository.findBySerialNum(request.serialNum())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 시리얼 번호입니다."));
+
         if (serial.isUse()) {
             throw new IllegalStateException("이미 사용 중인 시리얼 번호입니다.");
         }
 
-        LocalDate objectBirth = request.objectBirth() != null ? LocalDate.parse(request.objectBirth()) : null;
-        Device device = Device.of(
-                request.deviceId(), request.memberId(), request.serialNum(),
-                request.objectCode(), objectBirth, request.deviceType()
-        );
+        if (deviceRepository.existsByDeviceId(request.deviceId())) {
+            throw new IllegalStateException("이미 등록된 장치 ID입니다.");
+        }
 
-        Device saved = deviceRepository.save(device);
+        if (!userRepository.existsByMemberId(request.memberId())) {
+            throw new IllegalArgumentException("존재하지 않는 회원입니다.");
+        }
+
+        PetHouse petHouse = null;
+        if (request.petHouseId() != null) {
+            petHouse = petHouseRepository.findById(request.petHouseId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 펫하우스입니다."));
+        }
+
+        Device device = Device.of(request.deviceId(), request.memberId(), request.serialNum(), request.deviceType(), petHouse);
+
+        Device savedDevice = deviceRepository.save(device);
         serial.markUsed();
-        return DeviceVo.from(saved);
+        return DeviceVo.from(savedDevice);
     }
 
     @Transactional
@@ -66,24 +79,41 @@ public class DeviceService {
         Device device = deviceRepository.findById(request.seq())
                 .orElseThrow(() -> new IllegalArgumentException("장치를 찾을 수 없습니다."));
 
-        // 시리얼 변경 처리
+        // 1. 장치 ID 중복 체크 (변경될 경우에만)
+        if (request.deviceId() != null && !request.deviceId().equals(device.getDeviceId())) {
+            if (deviceRepository.existsByDeviceId(request.deviceId())) {
+                throw new IllegalStateException("이미 사용 중인 장치 ID입니다.");
+            }
+        }
+
+        // 2. 회원 존재 여부 체크 (변경될 경우에만)
+        if (request.memberId() != null && !request.memberId().equals(device.getMemberId())) {
+            if (!userRepository.existsByMemberId(request.memberId())) {
+                throw new EntityNotFoundException("존재하지 않는 회원입니다.");
+            }
+        }
+
+        // 3. 시리얼 번호 변경 처리
         if (request.serialNum() != null && !request.serialNum().equals(device.getSerialNum())) {
-            // 기존 시리얼 미사용 처리
             String oldSerialNum = request.oldSerialNum() != null ? request.oldSerialNum() : device.getSerialNum();
             serialRepository.findBySerialNum(oldSerialNum).ifPresent(Serial::markUnused);
-
-            // 새 시리얼 검증 및 사용 처리
             Serial newSerial = serialRepository.findBySerialNum(request.serialNum())
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 시리얼 번호입니다."));
+                    .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 시리얼 번호입니다."));
             if (newSerial.isUse()) {
                 throw new IllegalStateException("이미 사용 중인 시리얼 번호입니다.");
             }
             newSerial.markUsed();
         }
 
-        LocalDate objectBirth = request.objectBirth() != null ? LocalDate.parse(request.objectBirth()) : null;
-        device.update(request.deviceId(), request.memberId(), request.serialNum(),
-                request.objectCode(), objectBirth, request.deviceType());
+        // 4. 기본 정보 업데이트
+        device.update(request.deviceId(), request.memberId(), request.serialNum(), request.deviceType());
+
+        // 5. 펫 하우스 변경
+        if (request.petHouseId() != null) {
+            PetHouse petHouse = petHouseRepository.findById(request.petHouseId())
+                    .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 펫하우스입니다."));
+            device.assignToPetHouse(petHouse);
+        }
 
         return DeviceVo.from(device);
     }
@@ -91,7 +121,7 @@ public class DeviceService {
     @Transactional
     public void deleteDevice(Long seq) {
         Device device = deviceRepository.findById(seq)
-                .orElseThrow(() -> new IllegalArgumentException("장치를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("장치를 찾을 수 없습니다."));
 
         // 연결된 시리얼 미사용 처리
         serialRepository.findBySerialNum(device.getSerialNum()).ifPresent(Serial::markUnused);
@@ -100,26 +130,16 @@ public class DeviceService {
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getPopupList() {
+    public List<DevicePopupResponse> getPopupList() {
         return deviceRepository.findAllPopupList().stream()
-                .map(d -> {
-                    Map<String, Object> map = new LinkedHashMap<>();
-                    map.put("member_id", d.getMemberId());
-                    map.put("device_id", d.getDeviceId());
-                    return map;
-                })
+                .map(device -> new DevicePopupResponse(device.getMemberId(), device.getDeviceId()))
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getPopupListByType(String deviceType) {
+    public List<DevicePopupResponse> getPopupListByType(String deviceType) {
         return deviceRepository.findByDeviceType(deviceType).stream()
-                .map(d -> {
-                    Map<String, Object> map = new LinkedHashMap<>();
-                    map.put("member_id", d.getMemberId());
-                    map.put("device_id", d.getDeviceId());
-                    return map;
-                })
+                .map(device -> new DevicePopupResponse(device.getMemberId(), device.getDeviceId()))
                 .toList();
     }
 
