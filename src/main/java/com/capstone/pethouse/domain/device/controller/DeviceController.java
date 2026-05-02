@@ -2,6 +2,7 @@ package com.capstone.pethouse.domain.device.controller;
 
 import com.capstone.pethouse.domain.code.dto.CodeVo;
 import com.capstone.pethouse.domain.code.service.CodeService;
+import com.capstone.pethouse.domain.device.dto.DevicePopupResponse;
 import com.capstone.pethouse.domain.device.dto.DeviceRequest;
 import com.capstone.pethouse.domain.device.dto.DeviceVo;
 import com.capstone.pethouse.domain.device.service.DeviceService;
@@ -57,27 +58,27 @@ public class DeviceController {
     }
 
     @GetMapping("/popupList")
-    public ResponseEntity<List<Map<String, Object>>> getPopupList() {
+    public ResponseEntity<List<DevicePopupResponse>> getPopupList() {
         return ResponseEntity.ok(deviceService.getPopupList());
     }
 
     @GetMapping("/popupListByType")
-    public ResponseEntity<List<Map<String, Object>>> getPopupListByType(@RequestParam String deviceType) {
+    public ResponseEntity<List<DevicePopupResponse>> getPopupListByType(@RequestParam String deviceType) {
         return ResponseEntity.ok(deviceService.getPopupListByType(deviceType));
     }
 
     @GetMapping("/checkMember")
-    public ResponseEntity<Map<String, String>> checkMember(@RequestParam("member_id") String memberId) {
+    public ResponseEntity<Map<String, String>> checkMember(@RequestParam String memberId) {
         return ResponseEntity.ok(deviceService.checkMember(memberId));
     }
 
     @GetMapping("/checkSerial")
-    public ResponseEntity<Map<String, String>> checkSerial(@RequestParam("serial_num") String serialNum) {
+    public ResponseEntity<Map<String, String>> checkSerial(@RequestParam String serialNum) {
         return ResponseEntity.ok(deviceService.checkSerial(serialNum));
     }
 
     @GetMapping("/deviceTypeCodes")
-    public ResponseEntity<List<CodeVo>> getDeviceTypeCodes() {
-        return ResponseEntity.ok(codeService.getCodesByGroupCode("dtype"));
+    public ResponseEntity<List<CodeVo>> getDeviceTypeCodes(@RequestParam(defaultValue = "dtype") String groupCode) {
+        return ResponseEntity.ok(codeService.getCodesByGroupCode(groupCode));
     }
 }
