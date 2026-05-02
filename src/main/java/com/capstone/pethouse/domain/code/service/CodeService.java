@@ -12,7 +12,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -34,26 +36,34 @@ public class CodeService {
     public List<CodeVo> getCodeTree(String groupCode) {
         List<Code> allCodes = codeRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
 
+        Map<String, List<Code>> groupByParents = allCodes.stream()
+                .collect(Collectors.groupingBy(code ->
+                        (code.getGroupCode() == null) ? "" : code.getGroupCode()
+                ));
+
+        List<Code> roots;
         if (groupCode == null || groupCode.isEmpty()) {
-            return allCodes.stream()
-                    .filter(c -> c.getGroupCode() == null || c.getGroupCode().isEmpty())
-                    .map(root -> mapToTree(root, allCodes))
-                    .collect(Collectors.toList());
+            roots = groupByParents.getOrDefault("", Collections.emptyList());
         } else {
-            return allCodes.stream()
-                    .filter(c -> c.getCode().equals(groupCode))
-                    .map(root -> mapToTree(root, allCodes))
+            roots = allCodes.stream()
+                    .filter(code -> code.getCode().equals(groupCode))
                     .collect(Collectors.toList());
         }
+
+        return roots.stream()
+                .map(root -> mapToTree(root, groupByParents))
+                .toList();
     }
 
-    private CodeVo mapToTree(Code parent, List<Code> allCodes) {
-        List<CodeVo> children = allCodes.stream()
-                .filter(c -> parent.getCode().equals(c.getGroupCode()))
-                .map(c -> mapToTree(c, allCodes))
-                .collect(Collectors.toList());
+    private CodeVo mapToTree(Code parent, Map<String, List<Code>> groupByParent) {
+        List<CodeVo> children = groupByParent.getOrDefault(parent.getCode(), Collections.emptyList())
+                .stream()
+                .map(code -> mapToTree(code, groupByParent))
+                .toList();
+
         return CodeVo.withChildren(parent, children);
     }
+
 
     @Transactional(readOnly = true)
     public CodeVo getCode(String id) {
