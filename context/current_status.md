@@ -9,6 +9,7 @@
 - **[2026-04-26]** Integrated `InfluxDBClient` into newly created `DashboardSensorRepository` for active queries against the Influx sensor data timeseries.
 - **[2026-04-26]** Implemented `/api/code/*` API module for hierarchical data categories (Todo 003). Recycled existing Entity and injected recursive map logic for tree rendering using CamelCase representations natively.
 - **[2026-05-02]** Refactored controllers to remove redundant `try-catch` blocks, leveraging centralized exception handling via `GlobalExceptionHandler` (Todo 004).
+- **[2026-05-02]** Refactored Pet info (object_code, name, birth) from `Device` to `PetHouse` entity. Established a 1:N relationship between `PetHouse` and `Device` (Todo 005).
 
 ## Next Steps
 - Waiting for next `todo/` assignment.
