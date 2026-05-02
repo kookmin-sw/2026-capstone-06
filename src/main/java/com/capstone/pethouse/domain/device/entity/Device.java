@@ -54,8 +54,8 @@ public class Device {
         this.petHouse = petHouse;
     }
 
-    public static Device of(String deviceId, String memberId, String serialNum, String deviceType, PetHouse petHouse) {
-        return new Device(deviceId, memberId, serialNum, deviceType, true, petHouse);
+    public static Device of(String deviceId, String memberId, String serialNum, String deviceType) {
+        return new Device(deviceId, memberId, serialNum, deviceType, true, null);
     }
 
     public void assignToPetHouse(PetHouse petHouse) {

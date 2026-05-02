@@ -5,7 +5,6 @@ import com.capstone.pethouse.domain.device.dto.DevicePopupResponse;
 import com.capstone.pethouse.domain.device.dto.DeviceRequest;
 import com.capstone.pethouse.domain.device.dto.DeviceVo;
 import com.capstone.pethouse.domain.device.entity.Device;
-import com.capstone.pethouse.domain.device.entity.PetHouse;
 import com.capstone.pethouse.domain.device.repository.DeviceRepository;
 import com.capstone.pethouse.domain.device.repository.PetHouseRepository;
 import com.capstone.pethouse.domain.serial.entity.Serial;
@@ -61,13 +60,7 @@ public class DeviceService {
             throw new IllegalArgumentException("존재하지 않는 회원입니다.");
         }
 
-        PetHouse petHouse = null;
-        if (request.petHouseId() != null) {
-            petHouse = petHouseRepository.findById(request.petHouseId())
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 펫하우스입니다."));
-        }
-
-        Device device = Device.of(request.deviceId(), request.memberId(), request.serialNum(), request.deviceType(), petHouse);
+        Device device = Device.of(request.deviceId(), request.memberId(), request.serialNum(), request.deviceType());
 
         Device savedDevice = deviceRepository.save(device);
         serial.markUsed();
@@ -107,13 +100,6 @@ public class DeviceService {
 
         // 4. 기본 정보 업데이트
         device.update(request.deviceId(), request.memberId(), request.serialNum(), request.deviceType());
-
-        // 5. 펫 하우스 변경
-        if (request.petHouseId() != null) {
-            PetHouse petHouse = petHouseRepository.findById(request.petHouseId())
-                    .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 펫하우스입니다."));
-            device.assignToPetHouse(petHouse);
-        }
 
         return DeviceVo.from(device);
     }
