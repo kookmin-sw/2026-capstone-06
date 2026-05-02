@@ -30,33 +30,31 @@ public class MemberController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<MemberResponse> register(@RequestBody MemberRequest request) {
+    public ResponseEntity<MemberResponse> register(@Valid @RequestBody MemberRequest request) {
         MemberResponse response = memberService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/form")
-    public ResponseEntity<MemberResponse> registerByAdmin(@RequestBody MemberRequest request) {
+    public ResponseEntity<MemberResponse> registerByAdmin(@Valid @RequestBody MemberRequest request) {
         MemberResponse response = memberService.registerByAdmin(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/form")
-    public ResponseEntity<MemberResponse> updateByAdmin(@RequestBody MemberRequest request) {
+    public ResponseEntity<MemberResponse> updateByAdmin(@Valid @RequestBody MemberRequest request) {
         MemberResponse response = memberService.updateByAdmin(request);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/form/{seq}")
-    public ResponseEntity<?> getMemberBySeq(@PathVariable Long seq) {
-        MemberResponse response = memberService.getMemberBySeq(seq);
-        return ResponseEntity.ok(response != null ? response : Map.of());
+    public ResponseEntity<MemberResponse> getMemberBySeq(@PathVariable Long seq) {
+        return ResponseEntity.ok(memberService.getMemberBySeq(seq));
     }
 
     @GetMapping("/id/{memberId}")
-    public ResponseEntity<?> getMemberByMemberId(@PathVariable String memberId) {
-        MemberSimpleResponse response = memberService.getMemberByMemberId(memberId);
-        return ResponseEntity.ok(response != null ? response : Map.of());
+    public ResponseEntity<MemberSimpleResponse> getMemberByMemberId(@PathVariable String memberId) {
+        return ResponseEntity.ok(memberService.getMemberByMemberId(memberId));
     }
 
     @GetMapping("/checkId")
@@ -66,22 +64,15 @@ public class MemberController {
     }
 
     @PutMapping
-    public ResponseEntity<MemberResponse> updateMember(@RequestBody MemberRequest request) {
+    public ResponseEntity<MemberResponse> updateMember(@Valid @RequestBody MemberRequest request) {
         MemberResponse response = memberService.updateMember(request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping
-    public ResponseEntity<?> deleteMember(@RequestBody Map<String, Object> body) {
-        try {
-            Long seq = body.containsKey("seq") ? Long.valueOf(body.get("seq").toString()) : null;
-            String memberId = body.containsKey("member_id") ? (String) body.get("member_id") : null;
-            memberService.deleteMember(seq, memberId);
-            return ResponseEntity.ok(Map.of("success", true, "message", "회원과 연결된 장치가 삭제되었습니다."));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "회원 삭제 중 오류 발생"));
-        }
+    public ResponseEntity<Map<String, Object>> deleteMember(@RequestBody MemberDeleteRequest request) {
+        memberService.deleteMember(request);
+        return ResponseEntity.ok(Map.of("success", true, "message", "회원 정보가 삭제되었습니다."));
     }
 
     @PostMapping("/find-id")
