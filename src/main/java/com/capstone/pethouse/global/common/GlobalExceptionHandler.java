@@ -3,6 +3,7 @@ package com.capstone.pethouse.global.common;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -25,5 +26,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleIllegalArgumentException(IllegalArgumentException e) {
         return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
+    // Validation 실패 처리 (400 Bad Request)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<String> handleMethodArgumentNotValidException(org.springframework.web.bind.MethodArgumentNotValidException e) {
+        String errorMessage = e.getBindingResult().getFieldErrors().getFirst().getDefaultMessage();
+        return ResponseEntity.badRequest().body(errorMessage);
     }
 }

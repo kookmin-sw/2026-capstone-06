@@ -1,24 +1,21 @@
 package com.capstone.pethouse.domain.dashboard.dto;
 
-import java.time.LocalDate;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public class DashboardRequest {
 
     public record DeviceCreateReq(
-            String deviceId,
-            String memberId,
-            String serialNum,
-            String objectCode,
-            LocalDate objectBirth,
-            String deviceType,
-            Long seq
+            @NotNull Long houseId,
+            @NotBlank String deviceId,
+            @NotBlank String memberId,
+            @NotBlank String serialNum,
+            @NotBlank String deviceType
     ) {}
 
     public record DeviceUpdateReq(
             String memberId,
             String serialNum,
-            String objectCode,
-            LocalDate objectBirth,
             String deviceType
     ) {}
 

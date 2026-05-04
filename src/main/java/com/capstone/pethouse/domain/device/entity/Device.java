@@ -4,12 +4,14 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+@ToString
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
@@ -40,6 +42,7 @@ public class Device {
     @Column(nullable = false, updatable = false)
     private LocalDateTime regDate;
 
+    @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "house_id")
     private PetHouse petHouse;

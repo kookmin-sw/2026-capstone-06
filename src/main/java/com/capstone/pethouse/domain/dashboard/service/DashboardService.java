@@ -7,8 +7,13 @@ import com.capstone.pethouse.domain.dashboard.dto.DashboardResponse.*;
 import com.capstone.pethouse.domain.dashboard.repository.DashboardSensorRepository;
 import com.capstone.pethouse.domain.device.entity.Device;
 import com.capstone.pethouse.domain.device.repository.DeviceRepository;
+import com.capstone.pethouse.domain.User.entity.User;
+import com.capstone.pethouse.domain.User.repository.UserRepository;
+import com.capstone.pethouse.domain.device.entity.PetHouse;
+import com.capstone.pethouse.domain.device.repository.PetHouseRepository;
 import com.capstone.pethouse.domain.serial.entity.Serial;
 import com.capstone.pethouse.domain.serial.repository.SerialRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,73 +30,45 @@ public class DashboardService {
     private final SerialRepository serialRepository;
     private final CodeRepository codeRepository;
     private final DashboardSensorRepository sensorRepository;
+    private final UserRepository userRepository;
+    private final PetHouseRepository petHouseRepository;
 
     @Transactional(readOnly = true)
     public SensorDataRes getLatestSensorData(String deviceId) {
-        SensorDataRes raw = sensorRepository.getLatestSensorData(deviceId);
-        
-        Optional<Device> deviceOpt = deviceRepository.findAll().stream().filter(d -> d.getDeviceId().equals(deviceId)).findFirst();
-
-        // Enrich with Device data
-        if (deviceOpt.isPresent()) {
-            Device d = deviceOpt.get();
-            // Create a full response
-            return new SensorDataRes(
-                    deviceId,
-                    raw != null ? raw.temperature() : null,
-                    raw != null ? raw.humidity() : null,
-                    raw != null ? raw.heartRate() : null,
-                    raw != null ? raw.co2() : null,
-                    raw != null ? raw.lastUpdate() : null,
-                    d.getSerialNum(),
-                    d.getMemberId(),
-                    d.getObjectCode(),
-                    d.getObjectBirth() != null ? d.getObjectBirth().toString() : null,
-                    d.getDeviceType(),
-                    d.getDeviceTypeName(),
-                    null, // memberName (We don't have member repo injected, so null is fine as per spec)
-                    null, // memberPhone
-                    null, // roleCode
-                    d.isUse() // serialValid -> assuming isUse maps to it
-            );
-        }
-
-        return raw; 
+        return sensorRepository.getLatestSensorData(deviceId);
     }
 
     @Transactional(readOnly = true)
     public List<DeviceRes> getMemberDevices(String memberId) {
-        // Find by memberId. I'll use simple filter since DeviceRepository might not have findByMemberId explicitly
-        return deviceRepository.findAll().stream()
-                .filter(d -> d.getMemberId().equals(memberId))
+        return deviceRepository.findByMemberId(memberId).stream()
                 .map(DeviceRes::from)
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<SensorHistoryRes> getHistory(String deviceId) {
-        return sensorRepository.getSensorDataHistory(deviceId);
-    }
-
     @Transactional
-    public void upsertDevice(DeviceCreateReq dto) {
-        if (dto.seq() != null && deviceRepository.existsById(dto.seq())) {
-            // Update
-            Device device = deviceRepository.findById(dto.seq()).orElseThrow();
-            updateSerialState(device.getSerialNum(), dto.serialNum());
-            device.update(dto.deviceId(), dto.memberId(), dto.serialNum(), dto.objectCode(), dto.objectBirth(), dto.deviceType());
-        } else {
-            // Insert
-            Device device = Device.of(dto.deviceId(), dto.memberId(), dto.serialNum(), dto.objectCode(), dto.objectBirth(), dto.deviceType());
-            deviceRepository.save(device);
-            markSerialAsUsed(dto.serialNum());
+    public void createDevice(DeviceCreateReq dto) {
+        User user = userRepository.findByMemberId(dto.memberId())
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        // 전달된 houseId로 펫하우스 조회
+        PetHouse petHouse = petHouseRepository.findById(dto.houseId())
+                .orElseThrow(() -> new EntityNotFoundException("펫하우스를 찾을 수 없습니다."));
+
+        // 유저 소유 확인
+        if (!petHouse.getUser().equals(user)) {
+            throw new IllegalArgumentException("해당 펫하우스에 대한 권한이 없습니다.");
         }
+
+        Device device = Device.of(dto.deviceId(), dto.memberId(), dto.serialNum(), dto.deviceType());
+        device.assignToPetHouse(petHouse);
+        
+        deviceRepository.save(device);
+        markSerialAsUsed(dto.serialNum());
     }
 
     @Transactional
     public void updateDevice(String deviceId, DeviceUpdateReq dto) {
-        Device device = deviceRepository.findAll().stream()
-                .filter(d -> d.getDeviceId().equals(deviceId)).findFirst()
+        Device device = deviceRepository.findByDeviceId(deviceId)
                 .orElseThrow(() -> new IllegalArgumentException("장치를 찾을 수 없습니다."));
 
         if (dto.serialNum() != null && !device.getSerialNum().equals(dto.serialNum())) {
@@ -101,16 +78,13 @@ public class DashboardService {
         device.update(deviceId, 
                 dto.memberId() != null ? dto.memberId() : device.getMemberId(),
                 dto.serialNum() != null ? dto.serialNum() : device.getSerialNum(),
-                dto.objectCode() != null ? dto.objectCode() : device.getObjectCode(),
-                dto.objectBirth() != null ? dto.objectBirth() : device.getObjectBirth(),
                 dto.deviceType() != null ? dto.deviceType() : device.getDeviceType()
         );
     }
 
     @Transactional
     public void deleteDevice(String deviceId) {
-        Device device = deviceRepository.findAll().stream()
-                .filter(d -> d.getDeviceId().equals(deviceId)).findFirst()
+        Device device = deviceRepository.findByDeviceId(deviceId)
                 .orElseThrow(() -> new IllegalArgumentException("장치를 찾을 수 없습니다."));
                 
         // Mark serial as unused
@@ -132,8 +106,7 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public DeviceRes getDeviceDetail(String deviceId) {
-        Device device = deviceRepository.findAll().stream()
-                .filter(d -> d.getDeviceId().equals(deviceId)).findFirst()
+        Device device = deviceRepository.findByDeviceId(deviceId)
                 .orElseThrow(() -> new IllegalArgumentException("장치를 찾을 수 없습니다."));
         return DeviceRes.from(device);
     }
@@ -149,7 +122,7 @@ public class DashboardService {
     public DashboardInitRes getDashboardInit(String memberId) {
         List<DeviceRes> devices = getMemberDevices(memberId);
         
-        String selectedDeviceId = !devices.isEmpty() ? devices.get(0).deviceId() : null;
+        String selectedDeviceId = !devices.isEmpty() ? devices.getFirst().deviceId() : null;
         SensorDataRes latestData = selectedDeviceId != null ? getLatestSensorData(selectedDeviceId) : null;
         
         return new DashboardInitRes(devices, selectedDeviceId, latestData);

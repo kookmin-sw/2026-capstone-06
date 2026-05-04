@@ -20,6 +20,8 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
 
     boolean existsByDeviceId(String deviceId);
 
+    Optional<Device> findByDeviceId(String deviceId);
+
     @Query("SELECT d FROM Device d LEFT JOIN FETCH d.petHouse WHERE " +
             "(:searchQuery IS NULL OR " +
             " (:searchType = 'deviceId' AND d.deviceId LIKE %:searchQuery%) OR " +
@@ -34,4 +36,6 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     List<Device> findAllPopupList();
 
     List<Device> findByDeviceType(String deviceType);
+    
+    List<Device> findByMemberId(String memberId);
 }

@@ -4,6 +4,7 @@ import com.capstone.pethouse.domain.dashboard.dto.DashboardRequest.DeviceCreateR
 import com.capstone.pethouse.domain.dashboard.dto.DashboardRequest.DeviceUpdateReq;
 import com.capstone.pethouse.domain.dashboard.dto.DashboardResponse.*;
 import com.capstone.pethouse.domain.dashboard.service.DashboardService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,24 +28,10 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.getMemberDevices(memberId));
     }
 
-    @GetMapping("/history")
-    public ResponseEntity<List<SensorHistoryRes>> getHistory(@RequestParam String deviceId) {
-        return ResponseEntity.ok(dashboardService.getHistory(deviceId));
-    }
-
     @PostMapping("/device")
-    public ResponseEntity<MessageRes> createDevice(@RequestBody DeviceCreateReq request) {
-        if (request.deviceId() == null || request.memberId() == null ||
-            request.serialNum() == null || request.deviceType() == null) {
-            return ResponseEntity.badRequest().body(new MessageRes("필수 값 누락"));
-        }
-        
-        try {
-            dashboardService.upsertDevice(request);
-            return ResponseEntity.ok(new MessageRes("입력 완료"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new MessageRes(e.getMessage()));
-        }
+    public ResponseEntity<MessageRes> createDevice(@Valid @RequestBody DeviceCreateReq request) {
+        dashboardService.createDevice(request);
+        return ResponseEntity.ok(new MessageRes("입력 완료"));
     }
 
     @PutMapping("/device/{deviceId}")

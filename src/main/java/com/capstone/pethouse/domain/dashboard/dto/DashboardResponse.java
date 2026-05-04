@@ -17,11 +17,7 @@ public class DashboardResponse {
             String deviceId,
             String memberId,
             String serialNum,
-            String objectCode,
-            String objectName,
             String deviceType,
-            String deviceTypeName,
-            String objectBirth,
             boolean isUse,
             @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             LocalDateTime regDate
@@ -32,11 +28,7 @@ public class DashboardResponse {
                     device.getDeviceId(),
                     device.getMemberId(),
                     device.getSerialNum(),
-                    device.getObjectCode(),
-                    device.getObjectName(),
                     device.getDeviceType(),
-                    device.getDeviceTypeName(),
-                    device.getObjectBirth() != null ? device.getObjectBirth().toString() : null,
                     device.isUse(),
                     device.getRegDate()
             );
@@ -49,27 +41,7 @@ public class DashboardResponse {
             Double humidity,
             Double heartRate,
             Double co2,
-            String lastUpdate,
-            String serialNum,
-            String memberId,
-            String objectCode,
-            String objectBirth,
-            String deviceType,
-            String deviceTypeName,
-            String memberName,
-            String memberPhone,
-            String roleCode,
-            Boolean serialValid
-    ) {}
-
-    public record SensorHistoryRes(
-            Long seq,
-            String deviceId,
-            Double temVal,
-            Double humVal,
-            Double heartVal,
-            Double coVal,
-            String regDate
+            String lastUpdate
     ) {}
 
     public record CodeRes(
