@@ -46,6 +46,9 @@ public class SecurityConfig {
                         // Sensor 데이터 등록 (IoT 기기/앱) — 인증 없이 허용
                         .requestMatchers(HttpMethod.POST, "/data/house", "/data/neck").permitAll()
                         .requestMatchers(HttpMethod.GET, "/data/**").permitAll()
+                        // 디바이스 명세 v0.3 — IoT 디바이스 직접 호출
+                        .requestMatchers(HttpMethod.POST, "/data").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/command/fetch").permitAll()
                         // 파일 업로드/스트리밍 (IoT 기기) — 인증 없이 허용
                         .requestMatchers("/file/**").permitAll()
                         // WebSocket
