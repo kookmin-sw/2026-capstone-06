@@ -46,6 +46,15 @@ mqtt:
 # InfluxDB
 influxdb:
   url: ${INFLUXDB_URL:http://localhost:8086}
-  token: ${INFLUXDB_TOKEN}
-  org: ${INFLUXDB_ORG:your-org-name}
-  bucket: ${INFLUXDB_BUCKET:your-bucket-name}
+  token: ${INFLUXDB_TOKEN:dev-token}
+  org: ${INFLUXDB_ORG:pethouse}
+  bucket: ${INFLUXDB_BUCKET:sensor_data}
+
+# File upload
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:./uploads}
+
+# Multipart 업로드 사이즈 제한
+spring.servlet.multipart:
+  max-file-size: 50MB
+  max-request-size: 50MB

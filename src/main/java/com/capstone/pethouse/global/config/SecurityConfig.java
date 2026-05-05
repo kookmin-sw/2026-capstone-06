@@ -43,6 +43,13 @@ public class SecurityConfig {
                         .requestMatchers("/member/find-id", "/member/verify-user", "/member/reset-password").permitAll()
                         .requestMatchers("/device/checkMember", "/device/checkSerial").permitAll()
                         .requestMatchers("/device/deviceTypeCodes").permitAll()
+                        // Sensor 데이터 등록 (IoT 기기/앱) — 인증 없이 허용
+                        .requestMatchers(HttpMethod.POST, "/data/house", "/data/neck").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/data/**").permitAll()
+                        // 파일 업로드/스트리밍 (IoT 기기) — 인증 없이 허용
+                        .requestMatchers("/file/**").permitAll()
+                        // WebSocket
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
