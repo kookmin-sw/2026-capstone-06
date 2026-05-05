@@ -22,6 +22,7 @@ public class HospitalRepositoryImpl implements HospitalRepositoryCustom {
     public Page<Hospital> searchHospitals(String searchType, String searchQuery, Pageable pageable) {
         List<Hospital> content = queryFactory
                 .selectFrom(hospital)
+                .leftJoin(hospital.mainMedCode).fetchJoin()
                 .where(searchCondition(searchType, searchQuery))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -45,7 +46,7 @@ public class HospitalRepositoryImpl implements HospitalRepositoryCustom {
         return switch (searchType.toLowerCase()) {
             case "name" -> hospital.name.containsIgnoreCase(searchQuery);
             case "location" -> hospital.location.containsIgnoreCase(searchQuery);
-            case "medcode" -> hospital.mainMedCode.eq(searchQuery);
+            case "medcode" -> hospital.mainMedCode.code.eq(searchQuery);
             default -> null;
         };
     }

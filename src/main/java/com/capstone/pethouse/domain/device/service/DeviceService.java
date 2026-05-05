@@ -1,6 +1,7 @@
 package com.capstone.pethouse.domain.device.service;
 
 import com.capstone.pethouse.domain.User.repository.UserRepository;
+import com.capstone.pethouse.domain.User.entity.User;
 import com.capstone.pethouse.domain.device.dto.DevicePopupResponse;
 import com.capstone.pethouse.domain.device.dto.DeviceRequest;
 import com.capstone.pethouse.domain.device.dto.DeviceVo;
@@ -56,11 +57,10 @@ public class DeviceService {
             throw new IllegalStateException("이미 등록된 장치 ID입니다.");
         }
 
-        if (!userRepository.existsByMemberId(request.memberId())) {
-            throw new IllegalArgumentException("존재하지 않는 회원입니다.");
-        }
+        User user = userRepository.findByMemberId(request.memberId())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
-        Device device = Device.of(request.deviceId(), request.memberId(), request.serialNum(), request.deviceType());
+        Device device = Device.of(request.deviceId(), user, request.serialNum(), request.deviceType());
 
         Device savedDevice = deviceRepository.save(device);
         serial.markUsed();
@@ -80,10 +80,10 @@ public class DeviceService {
         }
 
         // 2. 회원 존재 여부 체크 (변경될 경우에만)
-        if (request.memberId() != null && !request.memberId().equals(device.getMemberId())) {
-            if (!userRepository.existsByMemberId(request.memberId())) {
-                throw new EntityNotFoundException("존재하지 않는 회원입니다.");
-            }
+        User user = device.getUser();
+        if (request.memberId() != null && (device.getUser() == null || !request.memberId().equals(device.getUser().getMemberId()))) {
+            user = userRepository.findByMemberId(request.memberId())
+                    .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
         }
 
         // 3. 시리얼 번호 변경 처리
@@ -99,7 +99,7 @@ public class DeviceService {
         }
 
         // 4. 기본 정보 업데이트
-        device.update(request.deviceId(), request.memberId(), request.serialNum(), request.deviceType());
+        device.update(request.deviceId(), user, request.serialNum(), request.deviceType());
 
         return DeviceVo.from(device);
     }
@@ -118,14 +118,14 @@ public class DeviceService {
     @Transactional(readOnly = true)
     public List<DevicePopupResponse> getPopupList() {
         return deviceRepository.findAllPopupList().stream()
-                .map(device -> new DevicePopupResponse(device.getMemberId(), device.getDeviceId()))
+                .map(device -> new DevicePopupResponse(device.getUser().getMemberId(), device.getDeviceId()))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<DevicePopupResponse> getPopupListByType(String deviceType) {
         return deviceRepository.findByDeviceType(deviceType).stream()
-                .map(device -> new DevicePopupResponse(device.getMemberId(), device.getDeviceId()))
+                .map(device -> new DevicePopupResponse(device.getUser().getMemberId(), device.getDeviceId()))
                 .toList();
     }
 

@@ -59,7 +59,7 @@ public class DashboardService {
             throw new IllegalArgumentException("해당 펫하우스에 대한 권한이 없습니다.");
         }
 
-        Device device = Device.of(dto.deviceId(), dto.memberId(), dto.serialNum(), dto.deviceType());
+        Device device = Device.of(dto.deviceId(), user, dto.serialNum(), dto.deviceType());
         device.assignToPetHouse(petHouse);
         
         deviceRepository.save(device);
@@ -75,8 +75,14 @@ public class DashboardService {
             updateSerialState(device.getSerialNum(), dto.serialNum());
         }
         
-        device.update(deviceId, 
-                dto.memberId() != null ? dto.memberId() : device.getMemberId(),
+        User user = device.getUser();
+        if (dto.memberId() != null && (device.getUser() == null || !dto.memberId().equals(device.getUser().getMemberId()))) {
+            user = userRepository.findByMemberId(dto.memberId())
+                    .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+        }
+
+        device.update(deviceId,
+                user,
                 dto.serialNum() != null ? dto.serialNum() : device.getSerialNum(),
                 dto.deviceType() != null ? dto.deviceType() : device.getDeviceType()
         );
@@ -114,7 +120,7 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public List<CodeRes> getCodes() {
         return codeRepository.findAll().stream()
-                .map(c -> new CodeRes(c.getCode(), c.getCodeName(), c.getGroupCode()))
+                .map(c -> new CodeRes(c.getCode(), c.getCodeName(), c.getParent() != null ? c.getParent().getCode() : null))
                 .collect(Collectors.toList());
     }
 

@@ -1,5 +1,6 @@
 package com.capstone.pethouse.domain.hospital.entity;
 
+import com.capstone.pethouse.domain.code.entity.Code;
 import com.capstone.pethouse.global.common.AuditingFields;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -33,16 +34,20 @@ public class Hospital extends AuditingFields {
     @Column(nullable = false)
     private Double longitude;
 
-    @Column(nullable = false, length = 20)
-    private String mainMedCode;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "main_med_code_seq")
+    private Code mainMedCode;
 
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "hospital_med_code", joinColumns = @JoinColumn(name = "hospital_seq"))
-    @Column(name = "med_code")
-    private List<String> medCodes = new ArrayList<>();
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "hospital_med_code_map",
+            joinColumns = @JoinColumn(name = "hospital_seq"),
+            inverseJoinColumns = @JoinColumn(name = "code_seq")
+    )
+    private List<Code> medCodes = new ArrayList<>();
 
     @Builder
-    private Hospital(String name, String location, String phone, Double latitude, Double longitude, String mainMedCode, List<String> medCodes) {
+    private Hospital(String name, String location, String phone, Double latitude, Double longitude, Code mainMedCode, List<Code> medCodes) {
         this.name = name;
         this.location = location;
         this.phone = phone;
@@ -54,7 +59,7 @@ public class Hospital extends AuditingFields {
         }
     }
 
-    public static Hospital of(String name, String location, String phone, Double latitude, Double longitude, String mainMedCode, List<String> medCodes) {
+    public static Hospital of(String name, String location, String phone, Double latitude, Double longitude, Code mainMedCode, List<Code> medCodes) {
         return Hospital.builder()
                 .name(name)
                 .location(location)
@@ -66,7 +71,7 @@ public class Hospital extends AuditingFields {
                 .build();
     }
 
-    public void update(String name, String location, String phone, Double latitude, Double longitude, String mainMedCode, List<String> medCodes) {
+    public void update(String name, String location, String phone, Double latitude, Double longitude, Code mainMedCode, List<Code> medCodes) {
         this.name = name;
         this.location = location;
         this.phone = phone;

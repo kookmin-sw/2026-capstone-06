@@ -25,7 +25,7 @@ public record HospitalListResponse(
                 hospital.getPhone(),
                 hospital.getLatitude(),
                 hospital.getLongitude(),
-                hospital.getMainMedCode(),
+                hospital.getMainMedCode() != null ? hospital.getMainMedCode().getCode() : null,
                 regDateStr
         );
     }

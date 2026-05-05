@@ -4,16 +4,22 @@ import com.capstone.pethouse.domain.code.entity.Code;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface CodeRepository extends JpaRepository<Code, String> {
+public interface CodeRepository extends JpaRepository<Code, Long> {
 
-    List<Code> findByGroupCode(String groupCode);
+    Optional<Code> findByCode(String code);
 
-    Page<Code> findByGroupCode(String groupCode, Pageable pageable);
+    List<Code> findByParent(Code parent);
 
-    List<Code> findByGroupCodeOrCode(String groupCode, String code);
+    Page<Code> findByParent(Code parent, Pageable pageable);
+
+    @Query("select c from Code c where c.parent.code = :groupCode or c.code = :code")
+    List<Code> findByGroupCodeOrCode(@Param("groupCode") String groupCode, @Param("code") String code);
 }

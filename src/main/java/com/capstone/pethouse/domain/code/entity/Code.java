@@ -18,10 +18,15 @@ import java.util.Objects;
 public class Code {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long seq;
+
     @Column(nullable = false, unique = true)
     private String code;
 
-    private String groupCode;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_seq")
+    private Code parent;
 
     @Column(nullable = false)
     private String codeName;
@@ -30,18 +35,18 @@ public class Code {
     @Column(nullable = false, updatable = false)
     private LocalDateTime regDate;
 
-    private Code(String code, String groupCode, String codeName) {
+    private Code(String code, Code parent, String codeName) {
         this.code = code;
-        this.groupCode = groupCode;
+        this.parent = parent;
         this.codeName = codeName;
     }
 
-    public static Code of(String code, String groupCode, String codeName) {
-        return new Code(code, groupCode, codeName);
+    public static Code of(String code, Code parent, String codeName) {
+        return new Code(code, parent, codeName);
     }
 
-    public void update(String groupCode, String codeName) {
-        if (groupCode != null) this.groupCode = groupCode;
+    public void update(Code parent, String codeName) {
+        if (parent != null) this.parent = parent;
         if (codeName != null) this.codeName = codeName;
     }
 
@@ -49,11 +54,11 @@ public class Code {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Code that)) return false;
-        return Objects.equals(this.code, that.code);
+        return Objects.equals(this.seq, that.seq);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(code);
+        return Objects.hashCode(seq);
     }
 }

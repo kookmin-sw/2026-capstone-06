@@ -1,5 +1,6 @@
 package com.capstone.pethouse.domain.device.entity;
 
+import com.capstone.pethouse.domain.User.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -26,8 +27,10 @@ public class Device {
     @Column(nullable = false, unique = true)
     private String deviceId;
 
-    @Column(nullable = false)
-    private String memberId;
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @Column(nullable = false)
     private String serialNum;
@@ -47,27 +50,27 @@ public class Device {
     @JoinColumn(name = "house_id")
     private PetHouse petHouse;
 
-    private Device(String deviceId, String memberId, String serialNum,
+    private Device(String deviceId, User user, String serialNum,
                    String deviceType, boolean isUse, PetHouse petHouse) {
         this.deviceId = deviceId;
-        this.memberId = memberId;
+        this.user = user;
         this.serialNum = serialNum;
         this.deviceType = deviceType;
         this.isUse = isUse;
         this.petHouse = petHouse;
     }
 
-    public static Device of(String deviceId, String memberId, String serialNum, String deviceType) {
-        return new Device(deviceId, memberId, serialNum, deviceType, true, null);
+    public static Device of(String deviceId, User user, String serialNum, String deviceType) {
+        return new Device(deviceId, user, serialNum, deviceType, true, null);
     }
 
     public void assignToPetHouse(PetHouse petHouse) {
         this.petHouse = petHouse;
     }
 
-    public void update(String deviceId, String memberId, String serialNum, String deviceType) {
+    public void update(String deviceId, User user, String serialNum, String deviceType) {
         if (deviceId != null) this.deviceId = deviceId;
-        if (memberId != null) this.memberId = memberId;
+        if (user != null) this.user = user;
         if (serialNum != null) this.serialNum = serialNum;
         if (deviceType != null) this.deviceType = deviceType;
     }

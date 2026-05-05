@@ -22,20 +22,22 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
 
     Optional<Device> findByDeviceId(String deviceId);
 
-    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.petHouse WHERE " +
+    @Query("SELECT d FROM Device d JOIN FETCH d.user LEFT JOIN FETCH d.petHouse LEFT JOIN FETCH d.petHouse.objectCode WHERE " +
             "(:searchQuery IS NULL OR " +
             " (:searchType = 'deviceId' AND d.deviceId LIKE %:searchQuery%) OR " +
-            " (:searchType = 'memberId' AND d.memberId LIKE %:searchQuery%) OR " +
+            " (:searchType = 'memberId' AND d.user.memberId LIKE %:searchQuery%) OR " +
             " (:searchType = 'serialNum' AND d.serialNum LIKE %:searchQuery%) OR " +
-            " (:searchType IS NULL AND (d.deviceId LIKE %:searchQuery% OR d.memberId LIKE %:searchQuery% OR d.serialNum LIKE %:searchQuery%)))")
+            " (:searchType IS NULL AND (d.deviceId LIKE %:searchQuery% OR d.user.memberId LIKE %:searchQuery% OR d.serialNum LIKE %:searchQuery%)))")
     Page<Device> findAllWithSearch(@Param("searchType") String searchType,
                                    @Param("searchQuery") String searchQuery,
                                    Pageable pageable);
 
-    @Query("SELECT d FROM Device d")
+    @Query("SELECT d FROM Device d JOIN FETCH d.user")
     List<Device> findAllPopupList();
 
-    List<Device> findByDeviceType(String deviceType);
-    
-    List<Device> findByMemberId(String memberId);
+    @Query("SELECT d FROM Device d JOIN FETCH d.user LEFT JOIN FETCH d.petHouse LEFT JOIN FETCH d.petHouse.objectCode WHERE d.deviceType = :deviceType")
+    List<Device> findByDeviceType(@Param("deviceType") String deviceType);
+
+    @Query("SELECT d FROM Device d JOIN FETCH d.user LEFT JOIN FETCH d.petHouse LEFT JOIN FETCH d.petHouse.objectCode WHERE d.user.memberId = :memberId")
+    List<Device> findByMemberId(@Param("memberId") String memberId);
 }

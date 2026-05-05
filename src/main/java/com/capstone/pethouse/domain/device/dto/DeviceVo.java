@@ -26,9 +26,9 @@ public record DeviceVo(
         return new DeviceVo(
                 device.getSeq(),
                 device.getDeviceId(),
-                device.getMemberId(),
+                device.getUser() != null ? device.getUser().getMemberId() : null,
                 device.getSerialNum(),
-                petHouse != null ? petHouse.getObjectCode() : null,
+                (petHouse != null && petHouse.getObjectCode() != null) ? petHouse.getObjectCode().getCode() : null,
                 petHouse != null ? petHouse.getObjectName() : null,
                 device.getDeviceType(),
                 (petHouse != null && petHouse.getObjectBirth() != null) ? petHouse.getObjectBirth().format(DATE_FORMATTER) : null,

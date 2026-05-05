@@ -35,9 +35,14 @@ public class CodeController {
         return ResponseEntity.ok(codeService.getCodeTree(groupCode));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<CodeVo> getCode(@PathVariable String id) {
-        return ResponseEntity.ok(codeService.getCode(id));
+    @GetMapping("/{seq}")
+    public ResponseEntity<CodeVo> getCode(@PathVariable Long seq) {
+        return ResponseEntity.ok(codeService.getCode(seq));
+    }
+
+    @GetMapping("/by-code/{code}")
+    public ResponseEntity<CodeVo> getCodeByCode(@PathVariable String code) {
+        return ResponseEntity.ok(codeService.getCodeByCode(code));
     }
 
     @PostMapping
@@ -54,9 +59,15 @@ public class CodeController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCode(@PathVariable String id) {
-        codeService.deleteCode(id);
+    @DeleteMapping("/{seq}")
+    public ResponseEntity<Void> deleteCode(@PathVariable Long seq) {
+        codeService.deleteCode(seq);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/by-code/{code}")
+    public ResponseEntity<Void> deleteCodeByCode(@PathVariable String code) {
+        codeService.deleteCodeByCode(code);
         return ResponseEntity.noContent().build();
     }
 }

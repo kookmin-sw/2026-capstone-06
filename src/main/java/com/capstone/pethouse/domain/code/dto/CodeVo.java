@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record CodeVo(
+        Long seq,
         String code,
         String groupCode,
         String codeName,
@@ -17,8 +18,9 @@ public record CodeVo(
 
     public static CodeVo from(Code code) {
         return new CodeVo(
+                code.getSeq(),
                 code.getCode(),
-                code.getGroupCode(),
+                code.getParent() != null ? code.getParent().getCode() : null,
                 code.getCodeName(),
                 code.getRegDate().format(FORMATTER),
                 List.of()
@@ -27,8 +29,9 @@ public record CodeVo(
 
     public static CodeVo withChildren(Code code, List<CodeVo> children) {
         return new CodeVo(
+                code.getSeq(),
                 code.getCode(),
-                code.getGroupCode(),
+                code.getParent() != null ? code.getParent().getCode() : null,
                 code.getCodeName(),
                 code.getRegDate().format(FORMATTER),
                 children

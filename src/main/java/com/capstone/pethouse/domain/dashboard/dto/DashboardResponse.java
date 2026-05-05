@@ -26,7 +26,7 @@ public class DashboardResponse {
             return new DeviceRes(
                     device.getSeq(),
                     device.getDeviceId(),
-                    device.getMemberId(),
+                    device.getUser() != null ? device.getUser().getMemberId() : null,
                     device.getSerialNum(),
                     device.getDeviceType(),
                     device.isUse(),

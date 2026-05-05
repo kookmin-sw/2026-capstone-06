@@ -1,6 +1,7 @@
 package com.capstone.pethouse.domain.device.entity;
 
 import com.capstone.pethouse.domain.User.entity.User;
+import com.capstone.pethouse.domain.code.entity.Code;
 import com.capstone.pethouse.domain.enums.PetHouseStatus;
 import com.capstone.pethouse.global.common.AuditingFields;
 import jakarta.persistence.*;
@@ -52,7 +53,9 @@ public class PetHouse extends AuditingFields {
     @Column(nullable = false)
     private LocalDateTime lastConnectedAt;
 
-    private String objectCode;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "object_code_seq")
+    private Code objectCode;
 
     private String objectName;
 
@@ -62,7 +65,7 @@ public class PetHouse extends AuditingFields {
     @OneToMany(mappedBy = "petHouse", cascade = CascadeType.ALL)
     private List<Device> devices = new ArrayList<>();
 
-    private PetHouse(User user, String nickname, PetHouseStatus petHouseStatus, Boolean isOccupied, LocalDateTime lastConnectedAt, String objectCode, String objectName, java.time.LocalDate objectBirth) {
+    private PetHouse(User user, String nickname, PetHouseStatus petHouseStatus, Boolean isOccupied, LocalDateTime lastConnectedAt, Code objectCode, String objectName, java.time.LocalDate objectBirth) {
         this.user = user;
         this.nickname = nickname;
         this.petHouseStatus = petHouseStatus;
@@ -73,11 +76,11 @@ public class PetHouse extends AuditingFields {
         this.objectBirth = objectBirth;
     }
 
-    public static PetHouse of(User user, String nickname, PetHouseStatus petHouseStatus, Boolean isOccupied, LocalDateTime lastConnectedAt, String objectCode, String objectName, java.time.LocalDate objectBirth) {
+    public static PetHouse of(User user, String nickname, PetHouseStatus petHouseStatus, Boolean isOccupied, LocalDateTime lastConnectedAt, Code objectCode, String objectName, java.time.LocalDate objectBirth) {
         return new PetHouse(user, nickname, petHouseStatus, isOccupied, lastConnectedAt, objectCode, objectName, objectBirth);
     }
 
-    public static PetHouse createDefault(User user, String nickname, String objectCode, String objectName, LocalDate objectBirth) {
+    public static PetHouse createDefault(User user, String nickname, Code objectCode, String objectName, LocalDate objectBirth) {
         return new PetHouse(
                 user,
                 nickname,
@@ -90,7 +93,7 @@ public class PetHouse extends AuditingFields {
         );
     }
 
-    public void updatePetInfo(String objectCode, String objectName, LocalDate objectBirth) {
+    public void updatePetInfo(Code objectCode, String objectName, LocalDate objectBirth) {
         if (objectCode != null) this.objectCode = objectCode;
         if (objectName != null) this.objectName = objectName;
         if (objectBirth != null) this.objectBirth = objectBirth;
