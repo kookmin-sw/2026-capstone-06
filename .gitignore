@@ -39,3 +39,8 @@ out/
 src/main/generated
 
 .env
+
+read_code_api.py
+read_excel.py
+dashboard_api.txt
+code_api.txt
