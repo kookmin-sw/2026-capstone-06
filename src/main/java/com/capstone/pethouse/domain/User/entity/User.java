@@ -80,6 +80,13 @@ public class User extends AuditingFields {
         this.memberPw = encodedPassword;
     }
 
+    @Column(length = 500)
+    private String refreshToken;
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
