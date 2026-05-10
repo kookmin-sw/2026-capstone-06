@@ -37,6 +37,8 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
 
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger 관련 리소스 허용
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/member/login", "/member/login-app").permitAll()
                         .requestMatchers("/member/register").permitAll()
                         .requestMatchers("/member/checkId").permitAll()
