@@ -74,8 +74,30 @@ services:
       INFLUXDB_ORG: ${INFLUXDB_ORG}
       INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
 
+  ngrinder-controller:
+    image: ngrinder/controller:latest
+    container_name: ngrinder-controller
+    restart: always
+    ports:
+      - "8090:80"
+      - "16001:16001"
+      - "12000-12009:12000-12009"
+    volumes:
+      - ngrinder_controller_data:/opt/ngrinder-controller
+
+  ngrinder-agent:
+    image: ngrinder/agent:latest
+    container_name: ngrinder-agent
+    restart: always
+    depends_on:
+      - ngrinder-controller
+    environment:
+      - GRINDER_AGENT_CONTROLLER_HOST=ngrinder-controller
+      - GRINDER_AGENT_CONTROLLER_PORT=16001
+
 volumes:
   mysql_data:
   emqx_data:
   emqx_log:
   influxdb_data:
+  ngrinder_controller_data:
