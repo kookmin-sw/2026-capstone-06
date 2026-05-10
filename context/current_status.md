@@ -9,6 +9,7 @@
   - `User` 엔티티에 `refreshToken` 추가.
   - 웹/앱 로그인 모두 `accessToken`, `refreshToken`을 발급하도록 `AuthService` 및 `AuthController` 수정.
   - `/member/refresh` 엔드포인트 신설 및 토큰 갱신 로직 추가.
+- **Swagger JWT 인증 설정:** Swagger UI에서 토큰을 입력할 수 있도록 `SwaggerConfig`를 통해 Authorize 기능을 활성화함.
 
 ### 2. 다음 단계
 - 실제 API 컨트롤러들에 Swagger 어노테이션(@Operation, @Parameter 등) 추가하여 문서 고도화.
