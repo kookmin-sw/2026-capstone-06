@@ -1,5 +1,5 @@
 .gradle/
-build/
+# build/ ◀ 제거됨 (Docker 빌드 시 빌드된 JAR를 참조해야 함)
 out/
 .idea/
 bin/
