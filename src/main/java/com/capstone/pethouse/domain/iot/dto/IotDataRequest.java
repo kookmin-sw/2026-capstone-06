@@ -8,9 +8,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * 필드명이 짧음 (대역폭 절약).
  */
 public record IotDataRequest(
-        @JsonProperty("SN") String sn,    // 시리얼 번호
-        @JsonProperty("T") Double t,      // 온도
-        @JsonProperty("H") Double h,      // 습도
-        @JsonProperty("CO") Double co     // CO 농도
+        @JsonProperty("serialNum") String sn,    // 시리얼 번호
+        @JsonProperty("tem_val") Double t,      // 온도
+        @JsonProperty("hum_val") Double h,      // 습도
+        @JsonProperty("co_val") Double co     // CO 농도
 ) {
 }

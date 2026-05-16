@@ -3,8 +3,8 @@ package com.capstone.pethouse.domain.iot.service;
 import com.capstone.pethouse.domain.device.entity.Device;
 import com.capstone.pethouse.domain.device.repository.DeviceRepository;
 import com.capstone.pethouse.domain.iot.dto.IotDataRequest;
-import com.capstone.pethouse.domain.sensor.dto.HouseDataRequest;
-import com.capstone.pethouse.domain.sensor.service.HouseDataService;
+import com.capstone.pethouse.domain.sensor.entity.Sensor;
+import com.capstone.pethouse.domain.sensor.repository.SensorRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class IotDataService {
 
     private final DeviceRepository deviceRepository;
-    private final HouseDataService houseDataService;
+    private final SensorRepository sensorRepository;
 
     @Transactional
     public void registerEnvironmentData(IotDataRequest request) {
@@ -37,15 +37,14 @@ public class IotDataService {
         Device device = deviceRepository.findBySerialNum(request.sn())
                 .orElseThrow(() -> new IllegalArgumentException("등록되지 않은 시리얼: " + request.sn()));
 
-        // 명세상 H(습도)는 House 디바이스 데이터에만 의미가 있음.
-        // /api/data는 환경(하우스) 데이터 전용이라 그대로 HouseData에 저장.
-        HouseDataRequest mapped = new HouseDataRequest(
+        // 임시로 Sensor entity에 직접 저장
+        Sensor sensor = Sensor.of(
                 device.getDeviceId(),
                 request.t(),
                 request.h(),
                 request.co()
         );
-        houseDataService.create(mapped);
+        sensorRepository.save(sensor);
 
         // TODO: 알림 임계값 초과 시 FCM 발송 — B 도메인 (Notifications) 구현 시 연동
         log.debug("IoT data registered — SN={}, deviceId={}", request.sn(), device.getDeviceId());

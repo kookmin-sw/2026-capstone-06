@@ -1,20 +1,17 @@
-# Current Status - 2026-05-10
+# Current Status - 2026-05-16
 
-## 작업 요약: Swagger(SpringDoc) 도입 및 JWT 보안 완비
+## 작업 요약: Sensor 데이터 저장 방식 변경 및 CI/CD 파이프라인 구축
 
 ### 1. 수행된 작업
-- **Swagger(SpringDoc) 라이브러리 추가:** `build.gradle`에 `springdoc-openapi-starter-webmvc-ui` 의존성 추가.
-- **보안 설정 업데이트:** `SecurityConfig.java`에서 Swagger UI 및 API Docs 관련 경로를 `permitAll()`로 설정.
-- **JWT 보안 기능 보완:** 
-  - `User` 엔티티에 `refreshToken` 추가.
-  - 웹/앱 로그인 모두 `accessToken`, `refreshToken`을 발급하도록 `AuthService` 및 `AuthController` 수정.
-  - `/member/refresh` 엔드포인트 신설 및 토큰 갱신 로직 추가.
-- **Swagger JWT 인증 설정:** Swagger UI에서 토큰을 입력할 수 있도록 `SwaggerConfig`를 통해 Authorize 기능을 활성화함.
-- **Git 추적 제외 관리:** `.gitignore` 대상임에도 추적되고 있던 `read_code_api.py` 등의 파일들을 `git rm --cached`로 정리함.
-- **Git 브랜치 통합:** `develop` 브랜치를 `main`으로 리베이스 통합하고 원격 `develop` 브랜치를 삭제하여 히스토리를 선형화함.
-- **부하 테스트 환경 구축:** `docker-compose.yml`에 nGrinder Controller 및 Agent 설정을 추가함.
+- **Sensor 데이터 저장 로직 수정**:
+  - `IotDataService.java`에서 IoT 데이터를 `HouseData`가 아닌 `Sensor` 엔티티에 직접 저장하도록 변경.
+  - `Sensor` 엔티티 및 `SensorRepository` 신규 생성.
+- **GitHub Actions CI/CD 구축**:
+  - `.github/workflows/deploy.yml` 생성.
+  - `main` 브랜치 push 시 자동으로 JAR 빌드 및 Docker 이미지를 Amazon ECR로 전송하는 워크플로우 구성.
+- **빌드 검증**: `.\gradlew.bat compileJava`를 통해 코드의 정상 컴파일 여부 확인 완료.
 
 ### 2. 다음 단계
-- 실제 API 컨트롤러들에 Swagger 어노테이션(@Operation, @Parameter 등) 추가하여 문서 고도화.
-- 프론트엔드 연동을 통한 로그인 및 토큰 갱신 프로세스 테스트.
-
+- GitHub Secrets 설정 안내 및 실제 push를 통한 CI/CD 동작 확인.
+- AWS EC2 환경에서 ECR로부터 최신 이미지를 pull 하여 실행하는 자동 배포 단계(SSH) 고려.
+- Sensor 데이터 저장 방식 고도화 (InfluxDB 연동 등).

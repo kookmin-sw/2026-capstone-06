@@ -7,9 +7,7 @@ import com.capstone.pethouse.domain.enums.RoleType;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +27,7 @@ public class MemberService {
     }
 
     @Transactional
-    public MemberResponse register(MemberRequest request) {
+    public MemberResponse register(MemberRegisterRequest request) {
         if (userRepository.existsByMemberId(request.memberId())) {
             throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
         }
@@ -38,13 +36,12 @@ public class MemberService {
                 request.memberId(),
                 passwordEncoder.encode(request.memberPw()),
                 request.memberName(),
-                request.memberPhone()
-        );
+                request.memberPhone());
         return MemberResponse.from(userRepository.save(user));
     }
 
     @Transactional
-    public MemberResponse registerByAdmin(MemberRequest request) {
+    public MemberResponse registerByAdmin(MemberRegisterRequest request) {
         if (userRepository.existsByMemberId(request.memberId())) {
             throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
         }
@@ -55,27 +52,22 @@ public class MemberService {
                 passwordEncoder.encode(request.memberPw()),
                 request.memberName(),
                 request.memberPhone(),
-                roleCode
-        );
+                roleCode);
         return MemberResponse.from(userRepository.save(user));
     }
 
     @Transactional
-    public MemberResponse updateMember(MemberRequest request) {
+    public MemberResponse updateMember(MemberModifyRequest request) {
         User user = userRepository.findById(request.seq())
                 .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
         String encodedPw = (request.memberPw() != null && !request.memberPw().isBlank())
-                ? passwordEncoder.encode(request.memberPw()) : null;
+                ? passwordEncoder.encode(request.memberPw())
+                : null;
         RoleType roleCode = request.roleCode() != null ? RoleType.valueOf(request.roleCode()) : null;
 
         user.update(encodedPw, request.memberName(), request.memberPhone(), roleCode);
         return MemberResponse.from(user);
-    }
-
-    @Transactional
-    public MemberResponse updateByAdmin(MemberRequest request) {
-        return updateMember(request);
     }
 
     @Transactional(readOnly = true)
@@ -96,7 +88,6 @@ public class MemberService {
     public boolean checkIdAvailable(String memberId) {
         return !userRepository.existsByMemberId(memberId);
     }
-
 
     @Transactional
     public void deleteMember(MemberDeleteRequest request) {
@@ -125,18 +116,15 @@ public class MemberService {
 
     @Transactional(readOnly = true)
     public boolean verifyUser(VerifyUserRequest request) {
-        return userRepository.findByMemberIdAndMemberNameAndMemberPhone(
-                request.memberId(), request.memberName(), request.memberPhone()
-        ).isPresent();
+        return userRepository.existsByMemberIdAndMemberNameAndMemberPhone(
+                request.memberId(), request.memberName(), request.memberPhone());
     }
 
     @Transactional
     public boolean resetPassword(ResetPasswordRequest request) {
         User user = userRepository.findByMemberIdAndMemberNameAndMemberPhone(
-                request.memberId(), request.memberName(), request.memberPhone()
-        ).orElse(null);
-
-        if (user == null) return false;
+                request.memberId(), request.memberName(), request.memberPhone())
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
         user.updatePassword(passwordEncoder.encode(request.newPassword()));
         return true;

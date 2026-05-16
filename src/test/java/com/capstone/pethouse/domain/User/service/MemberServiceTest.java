@@ -43,7 +43,7 @@ class MemberServiceTest {
     @Test
     @DisplayName("회원가입 성공")
     void registerSuccess() {
-        MemberRequest request = new MemberRequest(null, "user01", "1234", "홍길동", "010-1111-1111", null);
+        MemberModifyRequest request = new MemberModifyRequest(null, "user01", "1234", "홍길동", "010-1111-1111", null);
         User saved = createTestUser();
 
         given(userRepository.existsByMemberId("user01")).willReturn(false);
@@ -59,7 +59,7 @@ class MemberServiceTest {
     @Test
     @DisplayName("회원가입 실패 - 중복 아이디")
     void registerFailDuplicate() {
-        MemberRequest request = new MemberRequest(null, "user01", "1234", "홍길동", "010-1111-1111", null);
+        MemberModifyRequest request = new MemberModifyRequest(null, "user01", "1234", "홍길동", "010-1111-1111", null);
 
         given(userRepository.existsByMemberId("user01")).willReturn(true);
 

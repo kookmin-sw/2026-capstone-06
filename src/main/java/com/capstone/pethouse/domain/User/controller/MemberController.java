@@ -30,20 +30,20 @@ public class MemberController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<MemberResponse> register(@Valid @RequestBody MemberRequest request) {
+    public ResponseEntity<MemberResponse> register(@Valid @RequestBody MemberRegisterRequest request) {
         MemberResponse response = memberService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/form")
-    public ResponseEntity<MemberResponse> registerByAdmin(@Valid @RequestBody MemberRequest request) {
+    public ResponseEntity<MemberResponse> registerByAdmin(@Valid @RequestBody MemberRegisterRequest request) {
         MemberResponse response = memberService.registerByAdmin(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/form")
-    public ResponseEntity<MemberResponse> updateByAdmin(@Valid @RequestBody MemberRequest request) {
-        MemberResponse response = memberService.updateByAdmin(request);
+    public ResponseEntity<MemberResponse> updateByAdmin(@Valid @RequestBody MemberModifyRequest request) {
+        MemberResponse response = memberService.updateMember(request);
         return ResponseEntity.ok(response);
     }
 
@@ -64,7 +64,7 @@ public class MemberController {
     }
 
     @PutMapping
-    public ResponseEntity<MemberResponse> updateMember(@Valid @RequestBody MemberRequest request) {
+    public ResponseEntity<MemberResponse> updateMember(@Valid @RequestBody MemberModifyRequest request) {
         MemberResponse response = memberService.updateMember(request);
         return ResponseEntity.ok(response);
     }
@@ -82,10 +82,9 @@ public class MemberController {
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "memberId", memberId,
-                    "message", "회원 아이디를 찾았습니다."
-            ));
+                    "message", "회원 아이디를 찾았습니다."));
         }
-        return ResponseEntity.ok(Map.of("success", false, "message", "가입된 아이디 없음"));
+        return ResponseEntity.ok(Map.of("success", false, "message", "해당 정보로 가입된 아이디가 없습니다."));
     }
 
     @PostMapping("/verify-user")
@@ -100,6 +99,6 @@ public class MemberController {
         if (success) {
             return ResponseEntity.ok(Map.of("success", true, "message", "비밀번호가 성공적으로 변경되었습니다."));
         }
-        return ResponseEntity.badRequest().body(Map.of("success", false, "message", "회원 정보가 일치하지 않습니다."));
+        return ResponseEntity.badRequest().body(Map.of("error", "회원 정보가 일치하지 않습니다."));
     }
 }

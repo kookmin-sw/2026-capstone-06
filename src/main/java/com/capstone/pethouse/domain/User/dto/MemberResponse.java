@@ -7,14 +7,12 @@ import java.time.format.DateTimeFormatter;
 public record MemberResponse(
         Long seq,
         String memberId,
-        String memberPw,
         String memberName,
         String memberPhone,
         String roleCode,
         String roleName,
         String regDate,
-        boolean enabled
-) {
+        boolean enabled) {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static MemberResponse from(User user) {
@@ -25,13 +23,11 @@ public record MemberResponse(
         return new MemberResponse(
                 user.getSeq(),
                 user.getMemberId(),
-                user.getMemberPw(),
                 user.getMemberName(),
                 user.getMemberPhone(),
                 user.getRoleCode().name(),
                 roleName,
                 user.getCreatedAt().format(FORMATTER),
-                user.isEnabled()
-        );
+                user.isEnabled());
     }
 }
