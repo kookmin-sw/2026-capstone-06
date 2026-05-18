@@ -46,7 +46,7 @@ public class Code {
     }
 
     public void update(Code parent, String codeName) {
-        if (parent != null) this.parent = parent;
+        this.parent = parent;
         if (codeName != null) this.codeName = codeName;
     }
 

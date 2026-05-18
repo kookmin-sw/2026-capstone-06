@@ -84,7 +84,9 @@ public class CodeService {
 
     @Transactional(readOnly = true)
     public List<CodeResponse> getCodesByGroupCode(String groupCode) {
-        Code parent = codeRepository.findByCode(groupCode).orElse(null);
+        Code parent = codeRepository.findByCode(groupCode)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 그룹 코드입니다."));
+                
         return codeRepository.findByParent(parent).stream()
                 .map(CodeResponse::from)
                 .toList();
