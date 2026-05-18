@@ -4,7 +4,7 @@ import com.capstone.pethouse.domain.code.dto.CodeResponse;
 import com.capstone.pethouse.domain.code.service.CodeService;
 import com.capstone.pethouse.domain.device.dto.DevicePopupResponse;
 import com.capstone.pethouse.domain.device.dto.DeviceRequest;
-import com.capstone.pethouse.domain.device.dto.DeviceVo;
+import com.capstone.pethouse.domain.device.dto.DeviceResponse;
 import com.capstone.pethouse.domain.device.service.DeviceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,7 +27,7 @@ public class DeviceController {
     private final CodeService codeService;
 
     @GetMapping("/list")
-    public ResponseEntity<Page<DeviceVo>> list(
+    public ResponseEntity<Page<DeviceResponse>> list(
             @PageableDefault(size = 15, sort = "regDate", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String searchType,
             @RequestParam(required = false) String searchQuery) {
@@ -35,19 +35,19 @@ public class DeviceController {
     }
 
     @GetMapping("/{seq}")
-    public ResponseEntity<DeviceVo> getDevice(@PathVariable Long seq) {
+    public ResponseEntity<DeviceResponse> getDevice(@PathVariable Long seq) {
         return ResponseEntity.ok(deviceService.getDevice(seq));
     }
 
     @PostMapping
-    public ResponseEntity<DeviceVo> createDevice(@RequestBody DeviceRequest request) {
-        DeviceVo response = deviceService.createDevice(request);
+    public ResponseEntity<DeviceResponse> createDevice(@RequestBody DeviceRequest request) {
+        DeviceResponse response = deviceService.createDevice(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping
-    public ResponseEntity<DeviceVo> updateDevice(@RequestBody DeviceRequest request) {
-        DeviceVo response = deviceService.updateDevice(request);
+    public ResponseEntity<DeviceResponse> updateDevice(@RequestBody DeviceRequest request) {
+        DeviceResponse response = deviceService.updateDevice(request);
         return ResponseEntity.ok(response);
     }
 
@@ -78,8 +78,7 @@ public class DeviceController {
     }
 
     @GetMapping("/deviceTypeCodes")
-    public ResponseEntity<List<CodeResponse>> getDeviceTypeCodes(
-            @RequestParam(defaultValue = "dtype") String groupCode) {
-        return ResponseEntity.ok(codeService.getCodesByGroupCode(groupCode));
+    public ResponseEntity<List<CodeResponse>> getDeviceTypeCodes() {
+        return ResponseEntity.ok(codeService.getCodesByGroupCode("dtype"));
     }
 }

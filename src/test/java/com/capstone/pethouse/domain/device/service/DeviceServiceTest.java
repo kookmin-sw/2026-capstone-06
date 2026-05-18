@@ -3,12 +3,11 @@ package com.capstone.pethouse.domain.device.service;
 import com.capstone.pethouse.domain.User.entity.User;
 import com.capstone.pethouse.domain.User.repository.UserRepository;
 import com.capstone.pethouse.domain.device.dto.DeviceRequest;
-import com.capstone.pethouse.domain.device.dto.DeviceVo;
+import com.capstone.pethouse.domain.device.dto.DeviceResponse;
 import com.capstone.pethouse.domain.device.entity.Device;
 import com.capstone.pethouse.domain.device.repository.DeviceRepository;
 import com.capstone.pethouse.domain.serial.entity.Serial;
 import com.capstone.pethouse.domain.serial.repository.SerialRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,7 +57,7 @@ class DeviceServiceTest {
         given(deviceRepository.save(any(Device.class))).willReturn(device);
 
         // when
-        DeviceVo result = deviceService.createDevice(request);
+        DeviceResponse result = deviceService.createDevice(request);
 
         // then
         assertThat(result.deviceId()).isEqualTo("DEV_01");
@@ -108,7 +107,7 @@ class DeviceServiceTest {
         given(deviceRepository.findById(seq)).willReturn(Optional.of(device));
 
         // when
-        DeviceVo result = deviceService.getDevice(seq);
+        DeviceResponse result = deviceService.getDevice(seq);
 
         // then
         assertThat(result.seq()).isEqualTo(seq);
@@ -122,7 +121,7 @@ class DeviceServiceTest {
         Long seq = 1L;
         Device device = Device.of("DEV_01", createUser("user1"), "SN_001", "camera");
         Serial serial = createSerial("SN_001", true);
-        
+
         given(deviceRepository.findById(seq)).willReturn(Optional.of(device));
         given(serialRepository.findBySerialNum("SN_001")).willReturn(Optional.of(serial));
 

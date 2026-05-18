@@ -107,11 +107,10 @@ class MemberServiceTest {
     @Test
     @DisplayName("회원 정보 검증 성공")
     void verifyUserSuccess() {
-        User user = createTestUser();
         VerifyUserRequest request = new VerifyUserRequest("user01", "홍길동", "010-1111-1111");
 
-        given(userRepository.findByMemberIdAndMemberNameAndMemberPhone("user01", "홍길동", "010-1111-1111"))
-                .willReturn(Optional.of(user));
+        given(userRepository.existsByMemberIdAndMemberNameAndMemberPhone("user01", "홍길동", "010-1111-1111"))
+                .willReturn(true);
 
         assertThat(memberService.verifyUser(request)).isTrue();
     }

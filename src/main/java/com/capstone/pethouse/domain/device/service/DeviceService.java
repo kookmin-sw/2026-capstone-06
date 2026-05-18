@@ -4,10 +4,9 @@ import com.capstone.pethouse.domain.User.repository.UserRepository;
 import com.capstone.pethouse.domain.User.entity.User;
 import com.capstone.pethouse.domain.device.dto.DevicePopupResponse;
 import com.capstone.pethouse.domain.device.dto.DeviceRequest;
-import com.capstone.pethouse.domain.device.dto.DeviceVo;
+import com.capstone.pethouse.domain.device.dto.DeviceResponse;
 import com.capstone.pethouse.domain.device.entity.Device;
 import com.capstone.pethouse.domain.device.repository.DeviceRepository;
-import com.capstone.pethouse.domain.device.repository.PetHouseRepository;
 import com.capstone.pethouse.domain.serial.entity.Serial;
 import com.capstone.pethouse.domain.serial.repository.SerialRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -27,25 +26,24 @@ public class DeviceService {
     private final DeviceRepository deviceRepository;
     private final SerialRepository serialRepository;
     private final UserRepository userRepository;
-    private final PetHouseRepository petHouseRepository;
 
     @Transactional(readOnly = true)
-    public Page<DeviceVo> getDevices(String searchType, String searchQuery, Pageable pageable) {
+    public Page<DeviceResponse> getDevices(String searchType, String searchQuery, Pageable pageable) {
         String cleanedQuery = (searchQuery != null && !searchQuery.isBlank()) ? searchQuery : null;
 
-        return deviceRepository.findAllWithSearch(searchType, cleanedQuery, pageable).map(DeviceVo::from);
+        return deviceRepository.findAllWithSearch(searchType, cleanedQuery, pageable).map(DeviceResponse::from);
     }
 
     @Transactional(readOnly = true)
-    public DeviceVo getDevice(Long seq) {
+    public DeviceResponse getDevice(Long seq) {
         Device device = deviceRepository.findById(seq)
                 .orElseThrow(() -> new EntityNotFoundException("장치를 찾을 수 없습니다."));
 
-        return DeviceVo.from(device);
+        return DeviceResponse.from(device);
     }
 
     @Transactional
-    public DeviceVo createDevice(DeviceRequest request) {
+    public DeviceResponse createDevice(DeviceRequest request) {
         Serial serial = serialRepository.findBySerialNum(request.serialNum())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 시리얼 번호입니다."));
 
@@ -64,11 +62,11 @@ public class DeviceService {
 
         Device savedDevice = deviceRepository.save(device);
         serial.markUsed();
-        return DeviceVo.from(savedDevice);
+        return DeviceResponse.from(savedDevice);
     }
 
     @Transactional
-    public DeviceVo updateDevice(DeviceRequest request) {
+    public DeviceResponse updateDevice(DeviceRequest request) {
         Device device = deviceRepository.findById(request.seq())
                 .orElseThrow(() -> new IllegalArgumentException("장치를 찾을 수 없습니다."));
 
@@ -79,9 +77,11 @@ public class DeviceService {
             }
         }
 
-        // 2. 회원 존재 여부 체크 (변경될 경우에만)
-        User user = device.getUser();
-        if (request.memberId() != null && (device.getUser() == null || !request.memberId().equals(device.getUser().getMemberId()))) {
+        // 2. 회원 존재 여부 체크 (새로운 회원에게 기기를 양도하거나, 기존 회원이 탈퇴한 경우)
+        User user = device.getUser(); // 이미 존재하는 device에서 user 찾음
+        if (request.memberId() != null
+                && (user == null || !request.memberId().equals(user.getMemberId()))) { // request의 user와 기존 device의
+                                                                                       // user가 다르면
             user = userRepository.findByMemberId(request.memberId())
                     .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
         }
@@ -101,7 +101,7 @@ public class DeviceService {
         // 4. 기본 정보 업데이트
         device.update(request.deviceId(), user, request.serialNum(), request.deviceType());
 
-        return DeviceVo.from(device);
+        return DeviceResponse.from(device);
     }
 
     @Transactional
@@ -118,14 +118,14 @@ public class DeviceService {
     @Transactional(readOnly = true)
     public List<DevicePopupResponse> getPopupList() {
         return deviceRepository.findAllPopupList().stream()
-                .map(device -> new DevicePopupResponse(device.getUser().getMemberId(), device.getDeviceId()))
+                .map(DevicePopupResponse::from)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<DevicePopupResponse> getPopupListByType(String deviceType) {
         return deviceRepository.findByDeviceType(deviceType).stream()
-                .map(device -> new DevicePopupResponse(device.getUser().getMemberId(), device.getDeviceId()))
+                .map(DevicePopupResponse::from)
                 .toList();
     }
 

@@ -87,7 +87,7 @@ public class CodeService {
         Code parent = codeRepository.findByCode(groupCode).orElse(null);
         return codeRepository.findByParent(parent).stream()
                 .map(CodeResponse::from)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional

@@ -1,6 +1,5 @@
 package com.capstone.pethouse.domain.User.controller;
 
-import com.capstone.pethouse.domain.User.dto.*;
 import com.capstone.pethouse.domain.User.dto.request.VerifyUserRequest;
 import com.capstone.pethouse.domain.User.dto.request.ResetPasswordRequest;
 import com.capstone.pethouse.domain.User.dto.response.MemberSimpleResponse;
