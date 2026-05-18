@@ -1,7 +1,6 @@
 package com.capstone.pethouse.domain.hospital.controller;
 
-import com.capstone.pethouse.domain.hospital.dto.request.HospitalCreateRequest;
-import com.capstone.pethouse.domain.hospital.dto.request.HospitalUpdateRequest;
+import com.capstone.pethouse.domain.hospital.dto.request.HospitalRequest;
 import com.capstone.pethouse.domain.hospital.dto.response.HospitalDetailResponse;
 import com.capstone.pethouse.domain.hospital.dto.response.HospitalListResponse;
 import com.capstone.pethouse.domain.hospital.dto.response.HospitalStatusResponse;
@@ -15,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/hospital") // The API path is /api/hospital (the /api prefix is set in application properties)
+@RequestMapping("/hospital")
 public class HospitalController {
 
     private final HospitalService hospitalService;
@@ -35,14 +34,14 @@ public class HospitalController {
     }
 
     @PostMapping
-    public HospitalStatusResponse createHospital(@Valid @RequestBody HospitalCreateRequest request) {
+    public HospitalStatusResponse createHospital(@Valid @RequestBody HospitalRequest request) {
         return hospitalService.createHospital(request);
     }
 
     @PutMapping("/{seq}")
     public HospitalStatusResponse updateHospital(
             @PathVariable Long seq,
-            @Valid @RequestBody HospitalUpdateRequest request
+            @Valid @RequestBody HospitalRequest request
     ) {
         return hospitalService.updateHospital(seq, request);
     }

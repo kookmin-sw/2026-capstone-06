@@ -2,8 +2,7 @@ package com.capstone.pethouse.domain.hospital.service;
 
 import com.capstone.pethouse.domain.code.entity.Code;
 import com.capstone.pethouse.domain.code.repository.CodeRepository;
-import com.capstone.pethouse.domain.hospital.dto.request.HospitalCreateRequest;
-import com.capstone.pethouse.domain.hospital.dto.request.HospitalUpdateRequest;
+import com.capstone.pethouse.domain.hospital.dto.request.HospitalRequest;
 import com.capstone.pethouse.domain.hospital.dto.response.HospitalDetailResponse;
 import com.capstone.pethouse.domain.hospital.dto.response.HospitalListResponse;
 import com.capstone.pethouse.domain.hospital.dto.response.HospitalStatusResponse;
@@ -17,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,74 +24,82 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class HospitalService {
 
-    private final HospitalRepository hospitalRepository;
-    private final CodeRepository codeRepository;
+        private final HospitalRepository hospitalRepository;
+        private final CodeRepository codeRepository;
 
-    public Page<HospitalListResponse> getHospitalList(String searchType, String searchQuery, Pageable pageable) {
-        Page<Hospital> hospitals = hospitalRepository.searchHospitals(searchType, searchQuery, pageable);
-        return hospitals.map(HospitalListResponse::from);
-    }
+        public Page<HospitalListResponse> getHospitalList(String searchType, String searchQuery, Pageable pageable) {
+                String cleanedQuery = (searchQuery != null && !searchQuery.isBlank()) ? searchQuery.trim() : null;
 
-    public HospitalDetailResponse getHospital(Long seq) {
-        Hospital hospital = hospitalRepository.findById(seq)
-                .orElseThrow(() -> new EntityNotFoundException("Hospital not found: " + seq));
-        return HospitalDetailResponse.of(hospital);
-    }
+                Page<Hospital> hospitals = hospitalRepository.searchHospitals(searchType, cleanedQuery, pageable);
+                return hospitals.map(HospitalListResponse::from);
+        }
 
-    @Transactional
-    public HospitalStatusResponse createHospital(HospitalCreateRequest request) {
-        Code mainMedCode = codeRepository.findByCode(request.mainMedCode())
-                .orElseThrow(() -> new EntityNotFoundException("Main medical code not found: " + request.mainMedCode()));
+        public HospitalDetailResponse getHospital(Long seq) {
+                Hospital hospital = hospitalRepository.findById(seq)
+                                .orElseThrow(() -> new EntityNotFoundException("Hospital not found: " + seq));
+                return HospitalDetailResponse.of(hospital);
+        }
 
-        List<Code> medCodes = request.medCodes().stream()
-                .map(codeStr -> codeRepository.findByCode(codeStr)
-                        .orElseThrow(() -> new EntityNotFoundException("Medical code not found: " + codeStr)))
-                .collect(Collectors.toList());
+        @Transactional
+        public HospitalStatusResponse createHospital(HospitalRequest request) {
+                Code mainMedCode = codeRepository.findByCode(request.mainMedCode())
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Main medical code not found: " + request.mainMedCode()));
 
-        Hospital hospital = Hospital.of(
-                request.name(),
-                request.location(),
-                request.phone(),
-                request.latitude(),
-                request.longitude(),
-                mainMedCode,
-                medCodes
-        );
-        Hospital saved = hospitalRepository.save(hospital);
-        return HospitalStatusResponse.success(saved.getSeq());
-    }
+                List<Code> medCodes = (request.medCodes() == null || request.medCodes().isEmpty())
+                                ? Collections.emptyList()
+                                : request.medCodes().stream()
+                                                .map(codeStr -> codeRepository.findByCode(codeStr)
+                                                                .orElseThrow(() -> new EntityNotFoundException(
+                                                                                "Medical code not found: " + codeStr)))
+                                                .collect(Collectors.toList());
 
-    @Transactional
-    public HospitalStatusResponse updateHospital(Long seq, HospitalUpdateRequest request) {
-        Hospital hospital = hospitalRepository.findById(seq)
-                .orElseThrow(() -> new EntityNotFoundException("Hospital not found: " + seq));
+                Hospital hospital = Hospital.of(
+                                request.name(),
+                                request.location(),
+                                request.phone(),
+                                request.latitude(),
+                                request.longitude(),
+                                mainMedCode,
+                                medCodes);
+                Hospital saved = hospitalRepository.save(hospital);
+                return HospitalStatusResponse.success(saved.getSeq());
+        }
 
-        Code mainMedCode = codeRepository.findByCode(request.mainMedCode())
-                .orElseThrow(() -> new EntityNotFoundException("Main medical code not found: " + request.mainMedCode()));
+        @Transactional
+        public HospitalStatusResponse updateHospital(Long seq, HospitalRequest request) {
+                Hospital hospital = hospitalRepository.findById(seq)
+                                .orElseThrow(() -> new EntityNotFoundException("Hospital not found: " + seq));
 
-        List<Code> medCodes = request.medCodes().stream()
-                .map(codeStr -> codeRepository.findByCode(codeStr)
-                        .orElseThrow(() -> new EntityNotFoundException("Medical code not found: " + codeStr)))
-                .collect(Collectors.toList());
+                Code mainMedCode = codeRepository.findByCode(request.mainMedCode())
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Main medical code not found: " + request.mainMedCode()));
 
-        hospital.update(
-                request.name(),
-                request.location(),
-                request.phone(),
-                request.latitude(),
-                request.longitude(),
-                mainMedCode,
-                medCodes
-        );
+                List<Code> medCodes = (request.medCodes() == null || request.medCodes().isEmpty())
+                                ? Collections.emptyList()
+                                : request.medCodes().stream()
+                                                .map(codeStr -> codeRepository.findByCode(codeStr)
+                                                                .orElseThrow(() -> new EntityNotFoundException(
+                                                                                "Medical code not found: " + codeStr)))
+                                                .collect(Collectors.toList());
 
-        return HospitalStatusResponse.success();
-    }
+                hospital.update(
+                                request.name(),
+                                request.location(),
+                                request.phone(),
+                                request.latitude(),
+                                request.longitude(),
+                                mainMedCode,
+                                medCodes);
 
-    @Transactional
-    public HospitalStatusResponse deleteHospital(Long seq) {
-        Hospital hospital = hospitalRepository.findById(seq)
-                .orElseThrow(() -> new IllegalArgumentException("Hospital not found: " + seq));
-        hospitalRepository.delete(hospital);
-        return HospitalStatusResponse.success();
-    }
+                return HospitalStatusResponse.success();
+        }
+
+        @Transactional
+        public HospitalStatusResponse deleteHospital(Long seq) {
+                Hospital hospital = hospitalRepository.findById(seq)
+                                .orElseThrow(() -> new EntityNotFoundException("Hospital not found: " + seq));
+                hospitalRepository.delete(hospital);
+                return HospitalStatusResponse.success();
+        }
 }

@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
-public record HospitalCreateRequest(
+public record HospitalRequest(
         @NotBlank String name,
         @NotBlank String location,
         @NotBlank String phone,

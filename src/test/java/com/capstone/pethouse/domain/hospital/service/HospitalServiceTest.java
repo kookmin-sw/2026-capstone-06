@@ -2,7 +2,7 @@ package com.capstone.pethouse.domain.hospital.service;
 
 import com.capstone.pethouse.domain.code.entity.Code;
 import com.capstone.pethouse.domain.code.repository.CodeRepository;
-import com.capstone.pethouse.domain.hospital.dto.request.HospitalCreateRequest;
+import com.capstone.pethouse.domain.hospital.dto.request.HospitalRequest;
 import com.capstone.pethouse.domain.hospital.dto.request.HospitalUpdateRequest;
 import com.capstone.pethouse.domain.hospital.dto.response.HospitalDetailResponse;
 import com.capstone.pethouse.domain.hospital.dto.response.HospitalStatusResponse;
@@ -60,7 +60,7 @@ class HospitalServiceTest {
     @DisplayName("병원을 등록한다 - 성공")
     void createHospital_Success() {
         // given
-        HospitalCreateRequest request = new HospitalCreateRequest(
+        HospitalRequest request = new HospitalRequest(
                 "새 병원", "서울", "02-123-4567",
                 37.5, 127.0,
                 "MED_01", List.of("MED_02"));
@@ -84,7 +84,7 @@ class HospitalServiceTest {
     @DisplayName("존재하지 않는 진료 코드로 등록 시 예외가 발생한다")
     void createHospital_CodeNotFound() {
         // given
-        HospitalCreateRequest request = new HospitalCreateRequest(
+        HospitalRequest request = new HospitalRequest(
                 "병원", "서울", "02-123-4567",
                 37.5, 127.0,
                 "INVALID_CODE", List.of());

@@ -3,11 +3,13 @@ package com.capstone.pethouse.domain.hospital.repository;
 import com.capstone.pethouse.domain.hospital.entity.Hospital;
 import static com.capstone.pethouse.domain.hospital.entity.QHospital.hospital;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Wildcard;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -29,13 +31,12 @@ public class HospitalRepositoryImpl implements HospitalRepositoryCustom {
                 .orderBy(hospital.createdAt.desc())
                 .fetch();
 
-        long total = queryFactory
-                .select(hospital.count())
+        JPAQuery<Long> countQuery = queryFactory
+                .select(Wildcard.count)
                 .from(hospital)
-                .where(searchCondition(searchType, searchQuery))
-                .fetchOne();
+                .where(searchCondition(searchType, searchQuery));
 
-        return new PageImpl<>(content, pageable, total);
+        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
 
     private BooleanExpression searchCondition(String searchType, String searchQuery) {
