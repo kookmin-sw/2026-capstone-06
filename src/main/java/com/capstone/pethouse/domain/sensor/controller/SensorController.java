@@ -12,17 +12,18 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RequiredArgsConstructor
-@RequestMapping("/data/chart")
+@RequestMapping("/data")
 @RestController
-public class ChartController {
+public class SensorController {
 
     private final ChartService chartService;
 
-    @GetMapping
+    @GetMapping("/chart")
     public ResponseEntity<List<SensorResponse>> getChart(
             @RequestParam String serialNum,
             @RequestParam(defaultValue = "-24h") String range,
             @RequestParam(defaultValue = "10m") String interval) {
         return ResponseEntity.ok(chartService.getChartData(serialNum, range, interval));
     }
+
 }

@@ -5,7 +5,6 @@ public record SensorResponse(
         String deviceId,
         Double temVal,
         Double humVal,
-        Double heartVal,
         Double coVal,
         String regDate
 ) {

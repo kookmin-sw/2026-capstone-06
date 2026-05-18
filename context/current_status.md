@@ -1,17 +1,14 @@
-# Current Status - 2026-05-16
+# Current Status - 2026-05-18
 
-## 작업 요약: Sensor 데이터 저장 방식 변경 및 CI/CD 파이프라인 구축
+## 작업 요약: 불필요한 목걸이 센서 코드 및 HTTP IoT 패키지(iot 폴더) 전체 정리
 
 ### 1. 수행된 작업
-- **Sensor 데이터 저장 로직 수정**:
-  - `IotDataService.java`에서 IoT 데이터를 `HouseData`가 아닌 `Sensor` 엔티티에 직접 저장하도록 변경.
-  - `Sensor` 엔티티 및 `SensorRepository` 신규 생성.
-- **GitHub Actions CI/CD 구축**:
-  - `.github/workflows/deploy.yml` 생성.
-  - `main` 브랜치 push 시 자동으로 JAR 빌드 및 Docker 이미지를 Amazon ECR로 전송하는 워크플로우 구성.
-- **빌드 검증**: `.\gradlew.bat compileJava`를 통해 코드의 정상 컴파일 여부 확인 완료.
+- **목걸이 센서 코드 정리**:
+  - `InfluxWriter.java`, `SensorPushService.java`에서 목걸이(neck_sensor) 관련 상수 및 메서드(`writeNeck`, `pushNeck`) 제거.
+  - `SensorResponse.java` DTO에서 `heartVal`(심박수) 필드 제거 및 관련 생성자 호출부(`HouseDataService.java`, `ChartService.java`, `ChartServiceTest.java`) 일괄 수정.
+- **HTTP IoT 패키지 완전 삭제**:
+  - 100% MQTT 통신 구조로 통일함에 따라, 미사용되는 `com.capstone.pethouse.domain.iot` 메인 소스 폴더 및 테스트 폴더를 통째로 안전하게 삭제 처리 완료.
+- **빌드 검증**: `.\gradlew.bat testClasses`를 실행하여 컴파일 및 빌드 정상 완료 확인 (`BUILD SUCCESSFUL in 26s`).
 
 ### 2. 다음 단계
-- GitHub Secrets 설정 안내 및 실제 push를 통한 CI/CD 동작 확인.
-- AWS EC2 환경에서 ECR로부터 최신 이미지를 pull 하여 실행하는 자동 배포 단계(SSH) 고려.
-- Sensor 데이터 저장 방식 고도화 (InfluxDB 연동 등).
+- `todo-007-20260505.md`에 기재된 숫자 기반의 PK/FK 관계 마이그레이션 작업 진행 예정.

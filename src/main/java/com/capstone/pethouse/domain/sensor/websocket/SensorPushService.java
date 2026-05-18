@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 public class SensorPushService {
 
     private static final String HOUSE_TOPIC_PREFIX = "/topic/sensor/house/";
-    private static final String NECK_TOPIC_PREFIX = "/topic/sensor/neck/";
 
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -21,14 +20,6 @@ public class SensorPushService {
             messagingTemplate.convertAndSend(HOUSE_TOPIC_PREFIX + data.deviceId(), data);
         } catch (Exception e) {
             log.warn("WebSocket push failed (house) for {}: {}", data.deviceId(), e.getMessage());
-        }
-    }
-
-    public void pushNeck(SensorResponse data) {
-        try {
-            messagingTemplate.convertAndSend(NECK_TOPIC_PREFIX + data.deviceId(), data);
-        } catch (Exception e) {
-            log.warn("WebSocket push failed (neck) for {}: {}", data.deviceId(), e.getMessage());
         }
     }
 }

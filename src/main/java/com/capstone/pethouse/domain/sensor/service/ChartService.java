@@ -69,8 +69,8 @@ public class ChartService {
                                 .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
                     }
 
-                    // seq=null, heartVal=null (HOUSE 센서이므로)
-                    result.add(new SensorResponse(null, deviceId, temVal, humVal, null, coVal, regDate));
+                    // seq=null (HOUSE 센서이므로)
+                    result.add(new SensorResponse(null, deviceId, temVal, humVal, coVal, regDate));
                 }
             }
         } catch (Exception e) {

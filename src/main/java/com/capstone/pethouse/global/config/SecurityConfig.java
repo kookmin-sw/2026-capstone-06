@@ -45,8 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/member/find-id", "/member/verify-user", "/member/reset-password").permitAll()
                         .requestMatchers("/device/checkMember", "/device/checkSerial").permitAll()
                         .requestMatchers("/device/deviceTypeCodes").permitAll()
-                        // Sensor 데이터 등록 (IoT 기기/앱) — 인증 없이 허용
-                        .requestMatchers(HttpMethod.POST, "/data/house", "/data/neck").permitAll()
+                        // Sensor 데이터 조회 — 인증 없이 허용
                         .requestMatchers(HttpMethod.GET, "/data/**").permitAll()
                         // 디바이스 명세 v0.3 — IoT 디바이스 직접 호출
                         .requestMatchers(HttpMethod.POST, "/data").permitAll()

@@ -2,39 +2,24 @@ package com.capstone.pethouse.domain.sensor.service;
 
 import com.capstone.pethouse.domain.sensor.dto.SensorResponse;
 import com.capstone.pethouse.domain.sensor.dto.HouseDataRequest;
-import com.capstone.pethouse.domain.sensor.entity.HouseData;
 import com.capstone.pethouse.domain.sensor.influx.InfluxWriter;
-import com.capstone.pethouse.domain.sensor.repository.HouseDataRepository;
 import com.capstone.pethouse.domain.sensor.websocket.SensorPushService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @RequiredArgsConstructor
 @Service
 public class HouseDataService {
 
-    private final HouseDataRepository houseDataRepository;
     private final InfluxWriter influxWriter;
     private final SensorPushService sensorPushService;
 
-    @Transactional(readOnly = true)
-    public Page<SensorResponse> getList(int pageNum, int pageSize, String searchQuery) {
-        PageRequest pageRequest = PageRequest.of(Math.max(pageNum - 1, 0), pageSize);
-        return houseDataRepository.findAllWithSearch(searchQuery, pageRequest).map(SensorResponse::fromHouse);
-    }
-
-    @Transactional(readOnly = true)
-    public SensorResponse get(Long seq) {
-        HouseData data = houseDataRepository.findById(seq)
-                .orElseThrow(() -> new IllegalArgumentException("하우스 데이터를 찾을 수 없습니다."));
-        return SensorResponse.fromHouse(data);
-    }
-
     /**
-     * HTTP/MQTT 양쪽에서 호출. RDB 저장 + InfluxDB write + WebSocket push.
+     * HTTP/MQTT 양쪽에서 호출. InfluxDB write + WebSocket push.
      */
     @Transactional
     public SensorResponse create(HouseDataRequest request) {
@@ -42,34 +27,21 @@ public class HouseDataService {
             throw new IllegalArgumentException("device_id는 필수입니다.");
         }
 
-        HouseData saved = houseDataRepository.save(
-                HouseData.of(request.deviceId(), request.temVal(), request.humVal(), request.coVal())
+        SensorResponse sensorResponse = new SensorResponse(
+                null,
+                request.deviceId(),
+                request.temVal(),
+                request.humVal(),
+                request.coVal(),
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
         );
-
-        SensorResponse vo = SensorResponse.fromHouse(saved);
 
         // InfluxDB 시계열 저장
         influxWriter.writeHouse(request.deviceId(), request.temVal(), request.humVal(), request.coVal());
 
         // WebSocket 실시간 푸시
-        sensorPushService.pushHouse(vo);
+        sensorPushService.pushHouse(sensorResponse);
 
-        return vo;
-    }
-
-    @Transactional
-    public SensorResponse update(Long seq, HouseDataRequest request) {
-        HouseData data = houseDataRepository.findById(seq)
-                .orElseThrow(() -> new IllegalArgumentException("하우스 데이터를 찾을 수 없습니다."));
-        data.update(request.deviceId(), request.temVal(), request.humVal(), request.coVal());
-        return SensorResponse.fromHouse(data);
-    }
-
-    @Transactional
-    public void delete(Long seq) {
-        if (!houseDataRepository.existsById(seq)) {
-            throw new IllegalArgumentException("하우스 데이터를 찾을 수 없습니다.");
-        }
-        houseDataRepository.deleteById(seq);
+        return sensorResponse;
     }
 }

@@ -14,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,7 +42,7 @@ class ChartServiceTest {
         Device device = Device.of("DEV001", user, "SN-001", "HOUSE");
         ReflectionTestUtils.setField(device, "seq", 1L);
 
-        SensorResponse res = new SensorResponse(null, "DEV001", 25.0, 60.0, null, 400.0, "20260518120000");
+        SensorResponse res = new SensorResponse(null, "DEV001", 25.0, 60.0, 400.0, "20260518120000");
 
         QueryApi queryApi = mock(QueryApi.class);
         given(influxDBClient.getQueryApi()).willReturn(queryApi);

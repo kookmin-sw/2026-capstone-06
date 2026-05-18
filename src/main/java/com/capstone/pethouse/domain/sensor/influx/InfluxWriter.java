@@ -17,7 +17,6 @@ import java.time.Instant;
 public class InfluxWriter {
 
     public static final String MEASUREMENT_HOUSE = "house_sensor";
-    public static final String MEASUREMENT_NECK = "neck_sensor";
 
     private final InfluxDBClient influxDBClient;
 
@@ -41,23 +40,6 @@ public class InfluxWriter {
             writeApi.writePoint(bucket, influxOrg, point);
         } catch (Exception e) {
             log.warn("InfluxDB write failed (house) for {}: {}", deviceId, e.getMessage());
-        }
-    }
-
-    public void writeNeck(String deviceId, Double temVal, Double heartVal, Double coVal) {
-        Point point = Point.measurement(MEASUREMENT_NECK)
-                .addTag("deviceId", deviceId)
-                .time(Instant.now(), WritePrecision.MS);
-
-        if (temVal != null) point.addField("temVal", temVal);
-        if (heartVal != null) point.addField("heartVal", heartVal);
-        if (coVal != null) point.addField("coVal", coVal);
-
-        try {
-            WriteApiBlocking writeApi = influxDBClient.getWriteApiBlocking();
-            writeApi.writePoint(bucket, influxOrg, point);
-        } catch (Exception e) {
-            log.warn("InfluxDB write failed (neck) for {}: {}", deviceId, e.getMessage());
         }
     }
 }
