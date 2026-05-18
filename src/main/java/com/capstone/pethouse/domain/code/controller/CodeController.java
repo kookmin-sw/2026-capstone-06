@@ -1,9 +1,8 @@
 package com.capstone.pethouse.domain.code.controller;
 
 import com.capstone.pethouse.domain.code.dto.CodeRequest;
-import com.capstone.pethouse.domain.code.dto.CodeVo;
+import com.capstone.pethouse.domain.code.dto.CodeResponse;
 import com.capstone.pethouse.domain.code.service.CodeService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,38 +22,38 @@ public class CodeController {
     private final CodeService codeService;
 
     @GetMapping("/list")
-    public ResponseEntity<Page<CodeVo>> list(
+    public ResponseEntity<Page<CodeResponse>> list(
             @PageableDefault(size = 15, sort = "regDate", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String groupCode) {
         return ResponseEntity.ok(codeService.getCodes(pageable, groupCode));
     }
 
     @GetMapping("/tree")
-    public ResponseEntity<List<CodeVo>> tree(
+    public ResponseEntity<List<CodeResponse>> tree(
             @RequestParam(required = false) String groupCode) {
         return ResponseEntity.ok(codeService.getCodeTree(groupCode));
     }
 
     @GetMapping("/{seq}")
-    public ResponseEntity<CodeVo> getCode(@PathVariable Long seq) {
+    public ResponseEntity<CodeResponse> getCode(@PathVariable Long seq) {
         return ResponseEntity.ok(codeService.getCode(seq));
     }
 
     @GetMapping("/by-code/{code}")
-    public ResponseEntity<CodeVo> getCodeByCode(@PathVariable String code) {
+    public ResponseEntity<CodeResponse> getCodeByCode(@PathVariable String code) {
         return ResponseEntity.ok(codeService.getCodeByCode(code));
     }
 
     @PostMapping
-    public ResponseEntity<CodeVo> createCode(@RequestBody CodeRequest request) {
-        CodeVo response = codeService.createCode(request);
+    public ResponseEntity<CodeResponse> createCode(@RequestBody CodeRequest request) {
+        CodeResponse response = codeService.createCode(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping
-    public ResponseEntity<CodeVo> updateCode(@RequestBody CodeRequest request) {
-        CodeVo response = codeService.updateCode(request);
+    public ResponseEntity<CodeResponse> updateCode(@RequestBody CodeRequest request) {
+        CodeResponse response = codeService.updateCode(request);
 
         return ResponseEntity.ok(response);
     }

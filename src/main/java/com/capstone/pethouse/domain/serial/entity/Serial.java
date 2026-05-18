@@ -40,9 +40,11 @@ public class Serial {
         return new Serial(serialNum, isUse);
     }
 
-    public void update(String serialNum, boolean isUse) {
-        if (serialNum != null) this.serialNum = serialNum;
-        this.isUse = isUse;
+    public void update(String serialNum, Boolean isUse) {
+        if (serialNum != null)
+            this.serialNum = serialNum;
+        if (isUse != null)
+            this.isUse = isUse;
     }
 
     public void markUsed() {
@@ -55,8 +57,10 @@ public class Serial {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Serial that)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Serial that))
+            return false;
         return this.seq != null && Objects.equals(this.seq, that.seq);
     }
 

@@ -2,7 +2,14 @@ package com.capstone.pethouse.domain.User.service;
 
 import com.capstone.pethouse.domain.User.entity.User;
 import com.capstone.pethouse.domain.User.repository.UserRepository;
-import com.capstone.pethouse.domain.User.dto.*;
+import com.capstone.pethouse.domain.User.dto.request.FindIdRequest;
+import com.capstone.pethouse.domain.User.dto.request.MemberDeleteRequest;
+import com.capstone.pethouse.domain.User.dto.request.MemberModifyRequest;
+import com.capstone.pethouse.domain.User.dto.request.MemberRegisterRequest;
+import com.capstone.pethouse.domain.User.dto.request.ResetPasswordRequest;
+import com.capstone.pethouse.domain.User.dto.request.VerifyUserRequest;
+import com.capstone.pethouse.domain.User.dto.response.MemberResponse;
+import com.capstone.pethouse.domain.User.dto.response.MemberSimpleResponse;
 import com.capstone.pethouse.domain.enums.RoleType;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -12,15 +19,23 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
+
 @RequiredArgsConstructor
 @Service
 public class MemberService {
+
+    private static final Set<String> VALID_SEARCH_TYPES =
+            Set.of("memberId", "memberName", "memberPhone", "roleCode");
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public Page<MemberResponse> getMembers(String searchType, String searchQuery, Pageable pageable) {
+        if (searchType != null && !VALID_SEARCH_TYPES.contains(searchType)) {
+            throw new IllegalArgumentException("유효하지 않은 검색 타입입니다: " + searchType);
+        }
         String cleanedQuery = (searchQuery != null && !searchQuery.isBlank()) ? searchQuery : null;
 
         return userRepository.findAllWithSearch(searchType, cleanedQuery, pageable).map(MemberResponse::from);

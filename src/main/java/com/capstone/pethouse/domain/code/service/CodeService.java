@@ -1,7 +1,7 @@
 package com.capstone.pethouse.domain.code.service;
 
 import com.capstone.pethouse.domain.code.dto.CodeRequest;
-import com.capstone.pethouse.domain.code.dto.CodeVo;
+import com.capstone.pethouse.domain.code.dto.CodeResponse;
 import com.capstone.pethouse.domain.code.entity.Code;
 import com.capstone.pethouse.domain.code.repository.CodeRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -24,7 +24,7 @@ public class CodeService {
     private final CodeRepository codeRepository;
 
     @Transactional(readOnly = true)
-    public Page<CodeVo> getCodes(Pageable pageable, String groupCode) {
+    public Page<CodeResponse> getCodes(Pageable pageable, String groupCode) {
         Page<Code> codePage;
         if (groupCode != null && !groupCode.isBlank()) {
             Code parent = codeRepository.findByCode(groupCode).orElse(null);
@@ -33,17 +33,15 @@ public class CodeService {
             codePage = codeRepository.findAll(pageable);
         }
 
-        return codePage.map(CodeVo::from);
+        return codePage.map(CodeResponse::from);
     }
 
     @Transactional(readOnly = true)
-    public List<CodeVo> getCodeTree(String groupCode) {
+    public List<CodeResponse> getCodeTree(String groupCode) {
         List<Code> allCodes = codeRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
 
         Map<Long, List<Code>> groupByParents = allCodes.stream()
-                .collect(Collectors.groupingBy(code ->
-                        (code.getParent() == null) ? 0L : code.getParent().getSeq()
-                ));
+                .collect(Collectors.groupingBy(code -> (code.getParent() == null) ? 0L : code.getParent().getSeq()));
 
         List<Code> roots;
         if (groupCode == null || groupCode.isEmpty()) {
@@ -59,42 +57,41 @@ public class CodeService {
                 .toList();
     }
 
-    private CodeVo mapToTree(Code parent, Map<Long, List<Code>> groupByParent) {
-        List<CodeVo> children = groupByParent.getOrDefault(parent.getSeq(), Collections.emptyList())
+    private CodeResponse mapToTree(Code parent, Map<Long, List<Code>> groupByParent) {
+        List<CodeResponse> children = groupByParent.getOrDefault(parent.getSeq(), Collections.emptyList())
                 .stream()
                 .map(code -> mapToTree(code, groupByParent))
                 .toList();
 
-        return CodeVo.withChildren(parent, children);
+        return CodeResponse.withChildren(parent, children);
     }
 
-
     @Transactional(readOnly = true)
-    public CodeVo getCode(Long seq) {
+    public CodeResponse getCode(Long seq) {
         Code code = codeRepository.findById(seq)
                 .orElseThrow(() -> new EntityNotFoundException("코드를 찾을 수 없습니다."));
 
-        return CodeVo.from(code);
+        return CodeResponse.from(code);
     }
 
     @Transactional(readOnly = true)
-    public CodeVo getCodeByCode(String codeStr) {
+    public CodeResponse getCodeByCode(String codeStr) {
         Code code = codeRepository.findByCode(codeStr)
                 .orElseThrow(() -> new EntityNotFoundException("코드를 찾을 수 없습니다."));
 
-        return CodeVo.from(code);
+        return CodeResponse.from(code);
     }
 
     @Transactional(readOnly = true)
-    public List<CodeVo> getCodesByGroupCode(String groupCode) {
+    public List<CodeResponse> getCodesByGroupCode(String groupCode) {
         Code parent = codeRepository.findByCode(groupCode).orElse(null);
         return codeRepository.findByParent(parent).stream()
-                .map(CodeVo::from)
+                .map(CodeResponse::from)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public CodeVo createCode(CodeRequest request) {
+    public CodeResponse createCode(CodeRequest request) {
         if (codeRepository.findByCode(request.code()).isPresent()) {
             throw new IllegalStateException("이미 존재하는 코드입니다.");
         }
@@ -108,13 +105,12 @@ public class CodeService {
         Code code = Code.of(
                 request.code(),
                 parent,
-                request.codeName()
-        );
-        return CodeVo.from(codeRepository.save(code));
+                request.codeName());
+        return CodeResponse.from(codeRepository.save(code));
     }
 
     @Transactional
-    public CodeVo updateCode(CodeRequest request) {
+    public CodeResponse updateCode(CodeRequest request) {
         Code code = codeRepository.findByCode(request.code())
                 .orElseThrow(() -> new EntityNotFoundException("코드를 찾을 수 없습니다."));
 
@@ -125,7 +121,7 @@ public class CodeService {
         }
 
         code.update(parent, request.codeName());
-        return CodeVo.from(code);
+        return CodeResponse.from(code);
     }
 
     @Transactional

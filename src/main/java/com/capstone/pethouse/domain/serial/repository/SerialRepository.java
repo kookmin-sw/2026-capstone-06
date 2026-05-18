@@ -9,15 +9,22 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface SerialRepository extends JpaRepository<Serial, Long> {
 
     Optional<Serial> findBySerialNum(String serialNum);
 
+    Optional<Serial> findById(Long seq);
+
+    @Query("SELECT s.serialNum FROM Serial s WHERE s.serialNum LIKE CONCAT(:prefix, '%')")
+    List<String> findSerialNumsByPrefix(String prefix);
+
     boolean existsBySerialNum(String serialNum);
 
     @Query("SELECT s FROM Serial s WHERE " +
-            "(:searchQuery IS NULL OR s.serialNum LIKE %:searchQuery%)")
+            "(:searchQuery IS NULL OR TRIM(:searchQuery) = '' OR " +
+            "LOWER(s.serialNum) LIKE LOWER(CONCAT('%', :searchQuery, '%')))")
     Page<Serial> findAllWithSearch(@Param("searchQuery") String searchQuery, Pageable pageable);
 }

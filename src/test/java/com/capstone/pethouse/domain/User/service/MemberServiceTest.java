@@ -1,6 +1,11 @@
 package com.capstone.pethouse.domain.User.service;
 
-import com.capstone.pethouse.domain.User.dto.*;
+import com.capstone.pethouse.domain.User.dto.request.FindIdRequest;
+import com.capstone.pethouse.domain.User.dto.request.MemberDeleteRequest;
+import com.capstone.pethouse.domain.User.dto.request.MemberRegisterRequest;
+import com.capstone.pethouse.domain.User.dto.request.ResetPasswordRequest;
+import com.capstone.pethouse.domain.User.dto.request.VerifyUserRequest;
+import com.capstone.pethouse.domain.User.dto.response.MemberResponse;
 import com.capstone.pethouse.domain.User.entity.User;
 import com.capstone.pethouse.domain.User.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -43,7 +48,7 @@ class MemberServiceTest {
     @Test
     @DisplayName("회원가입 성공")
     void registerSuccess() {
-        MemberModifyRequest request = new MemberModifyRequest(null, "user01", "1234", "홍길동", "010-1111-1111", null);
+        MemberRegisterRequest request = new MemberRegisterRequest("user01", "1234", "홍길동", "010-1111-1111", null);
         User saved = createTestUser();
 
         given(userRepository.existsByMemberId("user01")).willReturn(false);
@@ -59,7 +64,7 @@ class MemberServiceTest {
     @Test
     @DisplayName("회원가입 실패 - 중복 아이디")
     void registerFailDuplicate() {
-        MemberModifyRequest request = new MemberModifyRequest(null, "user01", "1234", "홍길동", "010-1111-1111", null);
+        MemberRegisterRequest request = new MemberRegisterRequest("user01", "1234", "홍길동", "010-1111-1111", null);
 
         given(userRepository.existsByMemberId("user01")).willReturn(true);
 

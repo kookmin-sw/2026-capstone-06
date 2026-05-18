@@ -1,6 +1,6 @@
 package com.capstone.pethouse.domain.device.controller;
 
-import com.capstone.pethouse.domain.code.dto.CodeVo;
+import com.capstone.pethouse.domain.code.dto.CodeResponse;
 import com.capstone.pethouse.domain.code.service.CodeService;
 import com.capstone.pethouse.domain.device.dto.DevicePopupResponse;
 import com.capstone.pethouse.domain.device.dto.DeviceRequest;
@@ -78,7 +78,8 @@ public class DeviceController {
     }
 
     @GetMapping("/deviceTypeCodes")
-    public ResponseEntity<List<CodeVo>> getDeviceTypeCodes(@RequestParam(defaultValue = "dtype") String groupCode) {
+    public ResponseEntity<List<CodeResponse>> getDeviceTypeCodes(
+            @RequestParam(defaultValue = "dtype") String groupCode) {
         return ResponseEntity.ok(codeService.getCodesByGroupCode(groupCode));
     }
 }

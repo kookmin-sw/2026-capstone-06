@@ -1,9 +1,12 @@
 package com.capstone.pethouse.domain.serial.service;
 
 import com.capstone.pethouse.domain.serial.dto.SerialRequest;
-import com.capstone.pethouse.domain.serial.dto.SerialVo;
+import com.capstone.pethouse.domain.serial.dto.SerialResponse;
 import com.capstone.pethouse.domain.serial.entity.Serial;
 import com.capstone.pethouse.domain.serial.repository.SerialRepository;
+import com.capstone.pethouse.domain.device.repository.DeviceRepository;
+
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +17,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Random;
 
 @RequiredArgsConstructor
@@ -21,19 +26,20 @@ import java.util.Random;
 public class SerialService {
 
     private final SerialRepository serialRepository;
+    private final DeviceRepository deviceRepository;
 
     @Transactional(readOnly = true)
-    public Page<SerialVo> getSerials(String searchQuery, Pageable pageable) {
+    public Page<SerialResponse> getSerials(String searchQuery, Pageable pageable) {
         String cleanedQuery = (searchQuery != null && !searchQuery.isBlank()) ? searchQuery : null;
 
-        return serialRepository.findAllWithSearch(cleanedQuery, pageable).map(SerialVo::from);
+        return serialRepository.findAllWithSearch(cleanedQuery, pageable).map(SerialResponse::from);
     }
 
     @Transactional(readOnly = true)
-    public SerialVo getSerial(Long seq) {
+    public SerialResponse getSerial(Long seq) {
         Serial serial = serialRepository.findById(seq)
-                .orElseThrow(() -> new IllegalArgumentException("시리얼을 찾을 수 없습니다."));
-        return SerialVo.from(serial);
+                .orElseThrow(() -> new EntityNotFoundException("시리얼을 찾을 수 없습니다."));
+        return SerialResponse.from(serial);
     }
 
     @Transactional
@@ -52,32 +58,35 @@ public class SerialService {
             throw new IllegalArgumentException("시퀀스 번호는 필수입니다.");
         }
         Serial serial = serialRepository.findById(request.seq())
-                .orElseThrow(() -> new IllegalArgumentException("시리얼을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("시리얼을 찾을 수 없습니다."));
 
         if (request.serialNum() != null && !request.serialNum().equals(serial.getSerialNum())) {
             if (serialRepository.existsBySerialNum(request.serialNum())) {
                 throw new IllegalStateException("이미 존재하는 시리얼 번호입니다.");
             }
         }
+        deviceRepository.findBySerialNum(serial.getSerialNum())
+                .ifPresent(device -> device.updateSerial(request.serialNum()));
 
-        boolean isUse = request.isUse() != null ? request.isUse() : serial.isUse();
-        serial.update(request.serialNum(), isUse);
+        serial.update(request.serialNum(), request.isUse());
+
         return "수정 성공";
     }
 
     @Transactional
     public String deleteSerial(Long seq) {
-        if (!serialRepository.existsById(seq)) {
-            throw new IllegalArgumentException("시리얼을 찾을 수 없습니다.");
-        }
-        serialRepository.deleteById(seq);
+        Serial serial = serialRepository.findById(seq)
+                .orElseThrow(() -> new EntityNotFoundException("시리얼을 찾을 수 없습니다."));
+
+        serialRepository.delete(serial);
+
         return "삭제 성공";
     }
 
     @Transactional
     public String markAsUsed(String serialNum) {
         Serial serial = serialRepository.findBySerialNum(serialNum)
-                .orElseThrow(() -> new IllegalArgumentException("시리얼을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("시리얼을 찾을 수 없습니다."));
         serial.markUsed();
         return "사용 처리 완료";
     }
@@ -85,15 +94,16 @@ public class SerialService {
     @Transactional
     public String markAsUnused(String serialNum) {
         Serial serial = serialRepository.findBySerialNum(serialNum)
-                .orElseThrow(() -> new IllegalArgumentException("시리얼을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("시리얼을 찾을 수 없습니다."));
         serial.markUnused();
         return "미사용 처리 완료";
     }
 
     @Transactional
-    public List<SerialVo> generateSerials(int count) {
+    public List<SerialResponse> generateSerials(int count) {
         String datePrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         List<Serial> serialsToSave = new ArrayList<>();
+        Set<String> existing = new HashSet<>(serialRepository.findSerialNumsByPrefix(datePrefix));
         Random random = new Random();
 
         for (int i = 0; i < count; i++) {
@@ -101,8 +111,9 @@ public class SerialService {
             int attempts = 0;
             while (attempts < 100) {
                 String candidate = datePrefix + "-DEV-" + String.format("%03d", random.nextInt(1000));
-                if (!serialRepository.existsBySerialNum(candidate)) {
+                if (!existing.contains(candidate)) {
                     serialNum = candidate;
+                    existing.add(candidate);
                     break;
                 }
                 attempts++;
@@ -116,7 +127,7 @@ public class SerialService {
         }
 
         return serialRepository.saveAll(serialsToSave).stream()
-                .map(SerialVo::from)
+                .map(SerialResponse::from)
                 .toList();
     }
 }

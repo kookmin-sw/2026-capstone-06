@@ -51,7 +51,7 @@ public class Device {
     private PetHouse petHouse;
 
     private Device(String deviceId, User user, String serialNum,
-                   String deviceType, boolean isUse, PetHouse petHouse) {
+            String deviceType, boolean isUse, PetHouse petHouse) {
         this.deviceId = deviceId;
         this.user = user;
         this.serialNum = serialNum;
@@ -69,16 +69,27 @@ public class Device {
     }
 
     public void update(String deviceId, User user, String serialNum, String deviceType) {
-        if (deviceId != null) this.deviceId = deviceId;
-        if (user != null) this.user = user;
-        if (serialNum != null) this.serialNum = serialNum;
-        if (deviceType != null) this.deviceType = deviceType;
+        if (deviceId != null)
+            this.deviceId = deviceId;
+        if (user != null)
+            this.user = user;
+        if (serialNum != null)
+            this.serialNum = serialNum;
+        if (deviceType != null)
+            this.deviceType = deviceType;
+    }
+
+    public void updateSerial(String serialNum) {
+        if (serialNum != null)
+            this.serialNum = serialNum;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Device that)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Device that))
+            return false;
         return this.seq != null && Objects.equals(this.seq, that.seq);
     }
 

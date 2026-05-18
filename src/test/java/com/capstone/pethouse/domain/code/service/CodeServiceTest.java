@@ -1,7 +1,7 @@
 package com.capstone.pethouse.domain.code.service;
 
 import com.capstone.pethouse.domain.code.dto.CodeRequest;
-import com.capstone.pethouse.domain.code.dto.CodeVo;
+import com.capstone.pethouse.domain.code.dto.CodeResponse;
 import com.capstone.pethouse.domain.code.entity.Code;
 import com.capstone.pethouse.domain.code.repository.CodeRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -45,7 +45,7 @@ class CodeServiceTest {
         given(codeRepository.findById(seq)).willReturn(Optional.of(code));
 
         // when
-        CodeVo result = codeService.getCode(seq);
+        CodeResponse result = codeService.getCode(seq);
 
         // then
         assertThat(result.seq()).isEqualTo(seq);
@@ -72,12 +72,12 @@ class CodeServiceTest {
         // given
         CodeRequest request = new CodeRequest("NEW_CODE", null, "새 코드");
         Code savedCode = createCode(1L, "NEW_CODE", "새 코드", null);
-        
+
         given(codeRepository.findByCode("NEW_CODE")).willReturn(Optional.empty());
         given(codeRepository.save(any(Code.class))).willReturn(savedCode);
 
         // when
-        CodeVo result = codeService.createCode(request);
+        CodeResponse result = codeService.createCode(request);
 
         // then
         assertThat(result.code()).isEqualTo("NEW_CODE");
@@ -112,7 +112,7 @@ class CodeServiceTest {
         given(codeRepository.save(any(Code.class))).willReturn(child);
 
         // when
-        CodeVo result = codeService.createCode(request);
+        CodeResponse result = codeService.createCode(request);
 
         // then
         assertThat(result.code()).isEqualTo("CHILD");
@@ -128,7 +128,7 @@ class CodeServiceTest {
         given(codeRepository.findByCode("UPDATE_CODE")).willReturn(Optional.of(existingCode));
 
         // when
-        CodeVo result = codeService.updateCode(request);
+        CodeResponse result = codeService.updateCode(request);
 
         // then
         assertThat(result.codeName()).isEqualTo("수정 이름");
@@ -159,12 +159,12 @@ class CodeServiceTest {
         String groupCode = "GRP";
         Code parent = createCode(1L, groupCode, "그룹", null);
         Code child = createCode(2L, "CHILD", "자식", parent);
-        
+
         given(codeRepository.findByCode(groupCode)).willReturn(Optional.of(parent));
         given(codeRepository.findByParent(parent, pageable)).willReturn(new PageImpl<>(List.of(child)));
 
         // when
-        Page<CodeVo> result = codeService.getCodes(pageable, groupCode);
+        Page<CodeResponse> result = codeService.getCodes(pageable, groupCode);
 
         // then
         assertThat(result.getContent()).hasSize(1);
