@@ -1,6 +1,6 @@
 package com.capstone.pethouse.domain.sensor.service;
 
-import com.capstone.pethouse.domain.sensor.dto.DataVo;
+import com.capstone.pethouse.domain.sensor.dto.SensorResponse;
 import com.capstone.pethouse.domain.sensor.dto.HouseDataRequest;
 import com.capstone.pethouse.domain.sensor.entity.HouseData;
 import com.capstone.pethouse.domain.sensor.influx.InfluxWriter;
@@ -53,12 +53,12 @@ class HouseDataServiceTest {
 
         given(houseDataRepository.save(any(HouseData.class))).willReturn(saved);
 
-        DataVo response = houseDataService.create(request);
+        SensorResponse response = houseDataService.create(request);
 
         assertThat(response.deviceId()).isEqualTo("DEV001");
         assertThat(response.temVal()).isEqualTo(25.3);
         verify(influxWriter).writeHouse("DEV001", 25.3, 60.0, 410.0);
-        verify(sensorPushService).pushHouse(any(DataVo.class));
+        verify(sensorPushService).pushHouse(any(SensorResponse.class));
     }
 
     @Test
@@ -78,7 +78,7 @@ class HouseDataServiceTest {
         HouseData data = createHouseData();
         given(houseDataRepository.findById(1L)).willReturn(Optional.of(data));
 
-        DataVo response = houseDataService.get(1L);
+        SensorResponse response = houseDataService.get(1L);
 
         assertThat(response.seq()).isEqualTo(1L);
     }

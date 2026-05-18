@@ -17,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,8 +63,7 @@ class HospitalServiceTest {
         HospitalCreateRequest request = new HospitalCreateRequest(
                 "새 병원", "서울", "02-123-4567",
                 37.5, 127.0,
-                "MED_01", List.of("MED_02")
-        );
+                "MED_01", List.of("MED_02"));
         Code mainCode = createCode("MED_01", "내과");
         Code subCode = createCode("MED_02", "외과");
         Hospital savedHospital = createHospital(1L, "새 병원", mainCode);
@@ -89,8 +87,7 @@ class HospitalServiceTest {
         HospitalCreateRequest request = new HospitalCreateRequest(
                 "병원", "서울", "02-123-4567",
                 37.5, 127.0,
-                "INVALID_CODE", List.of()
-        );
+                "INVALID_CODE", List.of());
         given(codeRepository.findByCode("INVALID_CODE")).willReturn(Optional.empty());
 
         // when & then
@@ -107,8 +104,7 @@ class HospitalServiceTest {
         HospitalUpdateRequest request = new HospitalUpdateRequest(
                 "수정 병원", "서울", "02-123-4567",
                 37.5, 127.0,
-                "MED_01", List.of()
-        );
+                "MED_01", List.of());
         Code mainCode = createCode("MED_01", "내과");
         Hospital existingHospital = createHospital(seq, "기존 병원", mainCode);
 
@@ -144,7 +140,7 @@ class HospitalServiceTest {
     }
 
     private Hospital createHospital(Long seq, String name, Code mainCode) {
-        Hospital hospital = Hospital.of(name, "Location", "Phone", 
+        Hospital hospital = Hospital.of(name, "Location", "Phone",
                 37.5, 127.0, mainCode, new java.util.ArrayList<>());
         ReflectionTestUtils.setField(hospital, "seq", seq);
         ReflectionTestUtils.setField(hospital, "createdAt", java.time.LocalDateTime.now());

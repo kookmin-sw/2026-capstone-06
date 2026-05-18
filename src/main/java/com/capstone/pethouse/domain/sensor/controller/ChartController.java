@@ -1,6 +1,6 @@
 package com.capstone.pethouse.domain.sensor.controller;
 
-import com.capstone.pethouse.domain.sensor.dto.DataVo;
+import com.capstone.pethouse.domain.sensor.dto.SensorResponse;
 import com.capstone.pethouse.domain.sensor.service.ChartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,10 @@ public class ChartController {
     private final ChartService chartService;
 
     @GetMapping
-    public ResponseEntity<List<DataVo>> getChart(@RequestParam String serialNum) {
-        return ResponseEntity.ok(chartService.getChartData(serialNum));
+    public ResponseEntity<List<SensorResponse>> getChart(
+            @RequestParam String serialNum,
+            @RequestParam(defaultValue = "-24h") String range,
+            @RequestParam(defaultValue = "10m") String interval) {
+        return ResponseEntity.ok(chartService.getChartData(serialNum, range, interval));
     }
 }

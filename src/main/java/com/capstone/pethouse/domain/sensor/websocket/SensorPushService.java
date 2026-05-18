@@ -1,6 +1,6 @@
 package com.capstone.pethouse.domain.sensor.websocket;
 
-import com.capstone.pethouse.domain.sensor.dto.DataVo;
+import com.capstone.pethouse.domain.sensor.dto.SensorResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -16,7 +16,7 @@ public class SensorPushService {
 
     private final SimpMessagingTemplate messagingTemplate;
 
-    public void pushHouse(DataVo data) {
+    public void pushHouse(SensorResponse data) {
         try {
             messagingTemplate.convertAndSend(HOUSE_TOPIC_PREFIX + data.deviceId(), data);
         } catch (Exception e) {
@@ -24,7 +24,7 @@ public class SensorPushService {
         }
     }
 
-    public void pushNeck(DataVo data) {
+    public void pushNeck(SensorResponse data) {
         try {
             messagingTemplate.convertAndSend(NECK_TOPIC_PREFIX + data.deviceId(), data);
         } catch (Exception e) {

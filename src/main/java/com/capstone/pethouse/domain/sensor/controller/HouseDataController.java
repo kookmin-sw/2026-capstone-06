@@ -1,6 +1,6 @@
 package com.capstone.pethouse.domain.sensor.controller;
 
-import com.capstone.pethouse.domain.sensor.dto.DataVo;
+import com.capstone.pethouse.domain.sensor.dto.SensorResponse;
 import com.capstone.pethouse.domain.sensor.dto.HouseDataRequest;
 import com.capstone.pethouse.domain.sensor.service.HouseDataService;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ public class HouseDataController {
     private final HouseDataService houseDataService;
 
     @GetMapping("/list")
-    public ResponseEntity<Page<DataVo>> list(
+    public ResponseEntity<Page<SensorResponse>> list(
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "15") int pageSize,
             @RequestParam(required = false) String searchQuery) {
@@ -25,7 +25,7 @@ public class HouseDataController {
     }
 
     @GetMapping("/{seq}")
-    public ResponseEntity<DataVo> get(@PathVariable Long seq) {
+    public ResponseEntity<SensorResponse> get(@PathVariable Long seq) {
         return ResponseEntity.ok(houseDataService.get(seq));
     }
 

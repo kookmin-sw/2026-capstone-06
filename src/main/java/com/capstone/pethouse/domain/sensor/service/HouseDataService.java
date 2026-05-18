@@ -1,6 +1,6 @@
 package com.capstone.pethouse.domain.sensor.service;
 
-import com.capstone.pethouse.domain.sensor.dto.DataVo;
+import com.capstone.pethouse.domain.sensor.dto.SensorResponse;
 import com.capstone.pethouse.domain.sensor.dto.HouseDataRequest;
 import com.capstone.pethouse.domain.sensor.entity.HouseData;
 import com.capstone.pethouse.domain.sensor.influx.InfluxWriter;
@@ -21,23 +21,23 @@ public class HouseDataService {
     private final SensorPushService sensorPushService;
 
     @Transactional(readOnly = true)
-    public Page<DataVo> getList(int pageNum, int pageSize, String searchQuery) {
+    public Page<SensorResponse> getList(int pageNum, int pageSize, String searchQuery) {
         PageRequest pageRequest = PageRequest.of(Math.max(pageNum - 1, 0), pageSize);
-        return houseDataRepository.findAllWithSearch(searchQuery, pageRequest).map(DataVo::fromHouse);
+        return houseDataRepository.findAllWithSearch(searchQuery, pageRequest).map(SensorResponse::fromHouse);
     }
 
     @Transactional(readOnly = true)
-    public DataVo get(Long seq) {
+    public SensorResponse get(Long seq) {
         HouseData data = houseDataRepository.findById(seq)
                 .orElseThrow(() -> new IllegalArgumentException("하우스 데이터를 찾을 수 없습니다."));
-        return DataVo.fromHouse(data);
+        return SensorResponse.fromHouse(data);
     }
 
     /**
      * HTTP/MQTT 양쪽에서 호출. RDB 저장 + InfluxDB write + WebSocket push.
      */
     @Transactional
-    public DataVo create(HouseDataRequest request) {
+    public SensorResponse create(HouseDataRequest request) {
         if (request.deviceId() == null || request.deviceId().isBlank()) {
             throw new IllegalArgumentException("device_id는 필수입니다.");
         }
@@ -46,7 +46,7 @@ public class HouseDataService {
                 HouseData.of(request.deviceId(), request.temVal(), request.humVal(), request.coVal())
         );
 
-        DataVo vo = DataVo.fromHouse(saved);
+        SensorResponse vo = SensorResponse.fromHouse(saved);
 
         // InfluxDB 시계열 저장
         influxWriter.writeHouse(request.deviceId(), request.temVal(), request.humVal(), request.coVal());
@@ -58,11 +58,11 @@ public class HouseDataService {
     }
 
     @Transactional
-    public DataVo update(Long seq, HouseDataRequest request) {
+    public SensorResponse update(Long seq, HouseDataRequest request) {
         HouseData data = houseDataRepository.findById(seq)
                 .orElseThrow(() -> new IllegalArgumentException("하우스 데이터를 찾을 수 없습니다."));
         data.update(request.deviceId(), request.temVal(), request.humVal(), request.coVal());
-        return DataVo.fromHouse(data);
+        return SensorResponse.fromHouse(data);
     }
 
     @Transactional

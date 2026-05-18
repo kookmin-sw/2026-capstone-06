@@ -3,7 +3,7 @@ package com.capstone.pethouse.domain.sensor.service;
 import com.capstone.pethouse.domain.device.entity.Device;
 import com.capstone.pethouse.domain.User.entity.User;
 import com.capstone.pethouse.domain.device.repository.DeviceRepository;
-import com.capstone.pethouse.domain.sensor.dto.DataVo;
+import com.capstone.pethouse.domain.sensor.dto.SensorResponse;
 import com.capstone.pethouse.domain.sensor.entity.HouseData;
 import com.capstone.pethouse.domain.sensor.entity.NeckData;
 import com.capstone.pethouse.domain.sensor.repository.HouseDataRepository;
@@ -59,7 +59,7 @@ class ChartServiceTest {
         given(deviceRepository.findBySerialNum("SN-001")).willReturn(Optional.of(device));
         given(houseDataRepository.findAllWithSearch(eq("DEV001"), any(Pageable.class))).willReturn(page);
 
-        List<DataVo> result = chartService.getChartData("SN-001");
+        List<SensorResponse> result = chartService.getChartData("SN-001");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).deviceId()).isEqualTo("DEV001");
@@ -81,7 +81,7 @@ class ChartServiceTest {
         given(deviceRepository.findBySerialNum("SN-002")).willReturn(Optional.of(device));
         given(neckDataRepository.findAllWithSearch(eq("DEV002"), any(Pageable.class))).willReturn(page);
 
-        List<DataVo> result = chartService.getChartData("SN-002");
+        List<SensorResponse> result = chartService.getChartData("SN-002");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).heartVal()).isEqualTo(64.0);

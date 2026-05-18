@@ -3,7 +3,6 @@ package com.capstone.pethouse.infra.mqtt.controller;
 import com.capstone.pethouse.infra.mqtt.MqttCommandService;
 import com.capstone.pethouse.infra.mqtt.MqttPublisher;
 import com.capstone.pethouse.infra.mqtt.MqttTopicManager;
-import com.capstone.pethouse.infra.mqtt.ack.AckResult;
 import com.capstone.pethouse.infra.mqtt.ack.MqttAckManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
