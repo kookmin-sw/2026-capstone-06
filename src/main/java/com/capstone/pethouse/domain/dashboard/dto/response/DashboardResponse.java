@@ -1,4 +1,4 @@
-package com.capstone.pethouse.domain.dashboard.dto;
+package com.capstone.pethouse.domain.dashboard.dto.response;
 
 import com.capstone.pethouse.domain.device.entity.Device;
 import com.fasterxml.jackson.annotation.JsonFormat;

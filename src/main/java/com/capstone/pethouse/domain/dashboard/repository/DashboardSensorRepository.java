@@ -1,6 +1,6 @@
 package com.capstone.pethouse.domain.dashboard.repository;
 
-import com.capstone.pethouse.domain.dashboard.dto.DashboardResponse.SensorDataRes;
+import com.capstone.pethouse.domain.dashboard.dto.response.SensorDataResponse;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.query.FluxRecord;
 import com.influxdb.query.FluxTable;
@@ -29,7 +29,7 @@ public class DashboardSensorRepository {
     private String organization;
 
     // Fetch Latest Sensor Data for a given deviceId
-    public SensorDataRes getLatestSensorData(String deviceId) {
+    public SensorDataResponse getLatestSensorData(String deviceId) {
         String flux = String.format("from(bucket:\"%s\") " +
                 "|> range(start: -30d) " +
                 "|> filter(fn: (r) => r._measurement == \"sensor\" and r.deviceId == \"%s\") " +
@@ -54,7 +54,7 @@ public class DashboardSensorRepository {
 
             if (fields.isEmpty()) return null;
 
-            return new SensorDataRes(
+            return new SensorDataResponse(
                     deviceId,
                     getDouble(fields.get("temperature")),
                     getDouble(fields.get("humidity")),

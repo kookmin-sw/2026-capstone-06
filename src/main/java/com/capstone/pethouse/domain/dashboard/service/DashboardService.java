@@ -1,9 +1,8 @@
 package com.capstone.pethouse.domain.dashboard.service;
 
 import com.capstone.pethouse.domain.code.repository.CodeRepository;
-import com.capstone.pethouse.domain.dashboard.dto.DashboardRequest.DeviceCreateReq;
-import com.capstone.pethouse.domain.dashboard.dto.DashboardRequest.DeviceUpdateReq;
-import com.capstone.pethouse.domain.dashboard.dto.DashboardResponse.*;
+import com.capstone.pethouse.domain.dashboard.dto.request.*;
+import com.capstone.pethouse.domain.dashboard.dto.response.*;
 import com.capstone.pethouse.domain.dashboard.repository.DashboardSensorRepository;
 import com.capstone.pethouse.domain.device.entity.Device;
 import com.capstone.pethouse.domain.device.repository.DeviceRepository;
@@ -34,21 +33,28 @@ public class DashboardService {
     private final PetHouseRepository petHouseRepository;
 
     @Transactional(readOnly = true)
-    public SensorDataRes getLatestSensorData(String deviceId) {
+    public SensorDataResponse getLatestSensorData(String deviceId) {
         return sensorRepository.getLatestSensorData(deviceId);
     }
 
     @Transactional(readOnly = true)
-    public List<DeviceRes> getMemberDevices(String memberId) {
+    public List<DeviceResponse> getMemberDevices(String memberId) {
         return deviceRepository.findByMemberId(memberId).stream()
-                .map(DeviceRes::from)
+                .map(DeviceResponse::from)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public void createDevice(DeviceCreateReq dto) {
+    public void createDevice(DeviceCreateRequest dto) {
         User user = userRepository.findByMemberId(dto.memberId())
                 .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        Serial serial = serialRepository.findBySerialNum(dto.serialNum())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 시리얼 번호입니다."));
+
+        if (serial.isUse()) {
+            throw new IllegalArgumentException("이미 사용중인 시리얼 번호입니다.");
+        }
 
         // 전달된 houseId로 펫하우스 조회
         PetHouse petHouse = petHouseRepository.findById(dto.houseId())
@@ -67,11 +73,18 @@ public class DashboardService {
     }
 
     @Transactional
-    public void updateDevice(String deviceId, DeviceUpdateReq dto) {
+    public void updateDevice(String deviceId, DeviceUpdateRequest dto) {
         Device device = deviceRepository.findByDeviceId(deviceId)
                 .orElseThrow(() -> new IllegalArgumentException("장치를 찾을 수 없습니다."));
 
         if (dto.serialNum() != null && !device.getSerialNum().equals(dto.serialNum())) {
+            Serial serial = serialRepository.findBySerialNum(dto.serialNum())
+                        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 시리얼 번호입니다."));
+            
+            if (serial.isUse()) {
+                throw new IllegalArgumentException("이미 사용중인 시리얼 번호입니다.");
+            }
+
             updateSerialState(device.getSerialNum(), dto.serialNum());
         }
         
@@ -99,39 +112,39 @@ public class DashboardService {
     }
 
     @Transactional(readOnly = true)
-    public StatusRes checkSerial(String serialNum) {
+    public StatusResponse checkSerial(String serialNum) {
         Optional<Serial> serialOpt = serialRepository.findBySerialNum(serialNum);
         if (serialOpt.isEmpty()) {
-            return new StatusRes("not_exist");
+            return new StatusResponse("not_exist");
         }
         if (serialOpt.get().isUse()) {
-            return new StatusRes("in_use");
+            return new StatusResponse("in_use");
         }
-        return new StatusRes("ok");
+        return new StatusResponse("ok");
     }
 
     @Transactional(readOnly = true)
-    public DeviceRes getDeviceDetail(String deviceId) {
+    public DeviceResponse getDeviceDetail(String deviceId) {
         Device device = deviceRepository.findByDeviceId(deviceId)
                 .orElseThrow(() -> new IllegalArgumentException("장치를 찾을 수 없습니다."));
-        return DeviceRes.from(device);
+        return DeviceResponse.from(device);
     }
 
     @Transactional(readOnly = true)
-    public List<CodeRes> getCodes() {
-        return codeRepository.findAll().stream()
-                .map(c -> new CodeRes(c.getCode(), c.getCodeName(), c.getParent() != null ? c.getParent().getCode() : null))
+    public List<CodeResponse> getCodes() {
+        return codeRepository.findAllWithParent().stream()
+                .map(CodeResponse::from)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public DashboardInitRes getDashboardInit(String memberId) {
-        List<DeviceRes> devices = getMemberDevices(memberId);
+    public DashboardInitResponse getDashboardInit(String memberId) {
+        List<DeviceResponse> devices = getMemberDevices(memberId);
         
         String selectedDeviceId = !devices.isEmpty() ? devices.getFirst().deviceId() : null;
-        SensorDataRes latestData = selectedDeviceId != null ? getLatestSensorData(selectedDeviceId) : null;
+        SensorDataResponse latestData = selectedDeviceId != null ? getLatestSensorData(selectedDeviceId) : null;
         
-        return new DashboardInitRes(devices, selectedDeviceId, latestData);
+        return new DashboardInitResponse(devices, selectedDeviceId, latestData);
     }
 
     private void updateSerialState(String oldSerial, String newSerial) {

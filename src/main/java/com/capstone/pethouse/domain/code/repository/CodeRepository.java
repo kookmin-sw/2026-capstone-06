@@ -22,4 +22,7 @@ public interface CodeRepository extends JpaRepository<Code, Long> {
 
     @Query("select c from Code c where c.parent.code = :groupCode or c.code = :code")
     List<Code> findByGroupCodeOrCode(@Param("groupCode") String groupCode, @Param("code") String code);
+
+    @Query("SELECT c FROM Code c LEFT JOIN FETCH c.parent")
+    List<Code> findAllWithParent();
 }

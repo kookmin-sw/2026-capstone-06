@@ -2,8 +2,8 @@ package com.capstone.pethouse.domain.dashboard.service;
 
 import com.capstone.pethouse.domain.User.entity.User;
 import com.capstone.pethouse.domain.User.repository.UserRepository;
-import com.capstone.pethouse.domain.dashboard.dto.DashboardRequest.DeviceCreateReq;
-import com.capstone.pethouse.domain.dashboard.dto.DashboardResponse.SensorDataRes;
+import com.capstone.pethouse.domain.dashboard.dto.request.DashboardRequest.DeviceCreateReq;
+import com.capstone.pethouse.domain.dashboard.dto.response.DashboardResponse.SensorDataRes;
 import com.capstone.pethouse.domain.dashboard.repository.DashboardSensorRepository;
 import com.capstone.pethouse.domain.device.entity.Device;
 import com.capstone.pethouse.domain.device.entity.PetHouse;

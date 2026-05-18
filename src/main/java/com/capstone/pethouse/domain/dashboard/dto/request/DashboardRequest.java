@@ -1,4 +1,4 @@
-package com.capstone.pethouse.domain.dashboard.dto;
+package com.capstone.pethouse.domain.dashboard.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
