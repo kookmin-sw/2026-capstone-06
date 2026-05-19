@@ -2,12 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Users, Hash, Cpu, ArrowRight, Activity, CheckCircle2, AlertCircle } from "lucide-react";
-import type { Member, Serial, Device } from "./mockData";
+import type { MemberDto } from "../../services/memberApi";
+import type { DeviceDto } from "../../services/deviceApi";
+import type { Serial } from "./mockData";
 
 interface Props {
-  members: Member[];
+  members: MemberDto[];
   serials: Serial[];
-  devices: Device[];
+  devices: DeviceDto[];
   onNavigate: (tab: "members" | "serials" | "devices") => void;
 }
 
@@ -35,7 +37,7 @@ export function AdminOverview({ members, serials, devices, onNavigate }: Props) 
           icon={<Users className="w-5 h-5" />}
           title="등록 회원"
           value={members.length}
-          sub={`관리자 ${members.filter(m => m.role === "ADMIN").length}명 · 일반 ${members.filter(m => m.role === "USER").length}명`}
+          sub={`관리자 ${members.filter(m => m.roleCode === "ADMIN").length}명 · 일반 ${members.filter(m => m.roleCode === "USER").length}명`}
           tone="violet"
           onClick={() => onNavigate("members")}
         />

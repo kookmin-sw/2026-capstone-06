@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ShieldCheck, Users, Hash, Cpu, LayoutDashboard, LogOut, Wifi, PanelLeft } from "lucide-react";
+import { useAuthStore } from "../../store/authStore";
 import { Badge } from "../../components/ui/badge";
 import { Card, CardContent } from "../../components/ui/card";
 import { MemberManager } from "./MemberManager";
@@ -33,6 +34,12 @@ export function AdminDashboard() {
   const [serials, setSerials] = useState<Serial[]>([]);
   const [devices, setDevices] = useState<DeviceDto[]>([]);
   const navigate = useNavigate();
+  const { memberId, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/auth");
+  };
 
   const loadMembers = useCallback(async () => {
     try {
@@ -198,12 +205,12 @@ export function AdminDashboard() {
                 <span className="text-lg leading-none mb-1">👤</span>
               </div>
               <div className="min-w-0 truncate">
-                <div className="text-sm font-semibold text-slate-700 truncate">관리자</div>
-                <div className="text-xs text-muted-foreground truncate">admin@pethouse.com</div>
+                <div className="text-sm font-semibold text-slate-700 truncate">{memberId ?? "관리자"}</div>
+                <div className="text-xs text-muted-foreground truncate">ADMIN</div>
               </div>
             </div>
             <button 
-              onClick={() => navigate("/")}
+              onClick={handleLogout}
               className="p-2 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors flex-shrink-0" 
               title="로그아웃"
             >
@@ -250,7 +257,7 @@ export function AdminDashboard() {
                 <span className="font-medium text-slate-700">{breadcrumb}</span>
               </div>
 
-              {tab === "overview" && <AdminOverview members={members as any} serials={serials} devices={devices} onNavigate={setTab} />}
+              {tab === "overview" && <AdminOverview members={members} serials={serials} devices={devices} onNavigate={setTab} />}
               {tab === "members" && (
                 <Card className="shadow-sm border-slate-200"><CardContent className="p-0 sm:p-6"><MemberManager members={members} setMembers={setMembers} onReload={loadMembers} /></CardContent></Card>
               )}
