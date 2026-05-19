@@ -8,5 +8,8 @@ public record DeviceRequest(
                 @JsonProperty("serial_num") String serialNum,
                 @JsonProperty("device_type") String deviceType,
                 @JsonProperty("device_id") String deviceId,
-                @JsonProperty("old_serial_num") String oldSerialNum) {
+                @JsonProperty("old_serial_num") String oldSerialNum,
+                @JsonProperty("object_name") String objectName,
+                @JsonProperty("object_birth") String objectBirth,
+                @JsonProperty("object_code") String objectCode) {
 }

@@ -2,11 +2,15 @@ package com.capstone.pethouse.domain.device.service;
 
 import com.capstone.pethouse.domain.User.repository.UserRepository;
 import com.capstone.pethouse.domain.User.entity.User;
+import com.capstone.pethouse.domain.code.entity.Code;
+import com.capstone.pethouse.domain.code.repository.CodeRepository;
 import com.capstone.pethouse.domain.device.dto.DevicePopupResponse;
 import com.capstone.pethouse.domain.device.dto.DeviceRequest;
 import com.capstone.pethouse.domain.device.dto.DeviceResponse;
 import com.capstone.pethouse.domain.device.entity.Device;
+import com.capstone.pethouse.domain.device.entity.PetHouse;
 import com.capstone.pethouse.domain.device.repository.DeviceRepository;
+import com.capstone.pethouse.domain.device.repository.PetHouseRepository;
 import com.capstone.pethouse.domain.serial.entity.Serial;
 import com.capstone.pethouse.domain.serial.repository.SerialRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -16,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -26,11 +31,12 @@ public class DeviceService {
     private final DeviceRepository deviceRepository;
     private final SerialRepository serialRepository;
     private final UserRepository userRepository;
+    private final PetHouseRepository petHouseRepository;
+    private final CodeRepository codeRepository;
 
     @Transactional(readOnly = true)
     public Page<DeviceResponse> getDevices(String searchType, String searchQuery, Pageable pageable) {
         String cleanedQuery = (searchQuery != null && !searchQuery.isBlank()) ? searchQuery : null;
-
         return deviceRepository.findAllWithSearch(searchType, cleanedQuery, pageable).map(DeviceResponse::from);
     }
 
@@ -38,7 +44,6 @@ public class DeviceService {
     public DeviceResponse getDevice(Long seq) {
         Device device = deviceRepository.findById(seq)
                 .orElseThrow(() -> new EntityNotFoundException("장치를 찾을 수 없습니다."));
-
         return DeviceResponse.from(device);
     }
 
@@ -59,9 +64,19 @@ public class DeviceService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
         Device device = Device.of(request.deviceId(), user, request.serialNum(), request.deviceType());
-
         Device savedDevice = deviceRepository.save(device);
         serial.markUsed();
+
+        // 펫 정보가 있으면 PetHouse 생성 후 연결
+        if (hasPetInfo(request)) {
+            Code objectCode = resolveObjectCode(request.objectCode());
+            LocalDate objectBirth = parseBirth(request.objectBirth());
+            PetHouse petHouse = PetHouse.createDefault(user, request.deviceId(), objectCode,
+                    request.objectName(), objectBirth);
+            PetHouse savedPetHouse = petHouseRepository.save(petHouse);
+            savedDevice.assignToPetHouse(savedPetHouse);
+        }
+
         return DeviceResponse.from(savedDevice);
     }
 
@@ -77,11 +92,10 @@ public class DeviceService {
             }
         }
 
-        // 2. 회원 존재 여부 체크 (새로운 회원에게 기기를 양도하거나, 기존 회원이 탈퇴한 경우)
-        User user = device.getUser(); // 이미 존재하는 device에서 user 찾음
+        // 2. 회원 존재 여부 체크
+        User user = device.getUser();
         if (request.memberId() != null
-                && (user == null || !request.memberId().equals(user.getMemberId()))) { // request의 user와 기존 device의
-                                                                                       // user가 다르면
+                && (user == null || !request.memberId().equals(user.getMemberId()))) {
             user = userRepository.findByMemberId(request.memberId())
                     .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
         }
@@ -101,6 +115,20 @@ public class DeviceService {
         // 4. 기본 정보 업데이트
         device.update(request.deviceId(), user, request.serialNum(), request.deviceType());
 
+        // 5. 펫 정보 업데이트
+        if (hasPetInfo(request)) {
+            Code objectCode = resolveObjectCode(request.objectCode());
+            LocalDate objectBirth = parseBirth(request.objectBirth());
+            if (device.getPetHouse() != null) {
+                device.getPetHouse().updatePetInfo(objectCode, request.objectName(), objectBirth);
+            } else {
+                PetHouse petHouse = PetHouse.createDefault(user, device.getDeviceId(), objectCode,
+                        request.objectName(), objectBirth);
+                PetHouse savedPetHouse = petHouseRepository.save(petHouse);
+                device.assignToPetHouse(savedPetHouse);
+            }
+        }
+
         return DeviceResponse.from(device);
     }
 
@@ -108,10 +136,7 @@ public class DeviceService {
     public void deleteDevice(Long seq) {
         Device device = deviceRepository.findById(seq)
                 .orElseThrow(() -> new EntityNotFoundException("장치를 찾을 수 없습니다."));
-
-        // 연결된 시리얼 미사용 처리
         serialRepository.findBySerialNum(device.getSerialNum()).ifPresent(Serial::markUnused);
-
         deviceRepository.delete(device);
     }
 
@@ -140,5 +165,27 @@ public class DeviceService {
         return serialRepository.findBySerialNum(serialNum)
                 .map(serial -> Map.of("status", serial.isUse() ? "in_use" : "ok"))
                 .orElse(Map.of("status", "not_exist"));
+    }
+
+    // ── 헬퍼 메서드 ──────────────────────────────────────────────────
+
+    private boolean hasPetInfo(DeviceRequest request) {
+        return (request.objectName() != null && !request.objectName().isBlank())
+                || (request.objectBirth() != null && !request.objectBirth().isBlank())
+                || (request.objectCode() != null && !request.objectCode().isBlank());
+    }
+
+    private Code resolveObjectCode(String objectCode) {
+        if (objectCode == null || objectCode.isBlank()) return null;
+        return codeRepository.findByCode(objectCode).orElse(null);
+    }
+
+    private LocalDate parseBirth(String objectBirth) {
+        if (objectBirth == null || objectBirth.isBlank()) return null;
+        try {
+            return LocalDate.parse(objectBirth);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

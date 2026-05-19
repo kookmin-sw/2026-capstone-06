@@ -7,9 +7,10 @@ import { MemberManager } from "./MemberManager";
 import { SerialManager } from "./SerialManager";
 import { DeviceManager } from "./DeviceManager";
 import { AdminOverview } from "./AdminOverview";
-import { initialDevices, type Serial, type Device } from "./mockData";
+import { type Serial } from "./mockData";
 import { getSerials } from "../../services/serialApi";
 import { getMembers, type MemberDto } from "../../services/memberApi";
+import { getDevices, type DeviceDto } from "../../services/deviceApi";
 
 type TabKey = "overview" | "members" | "serials" | "devices";
 
@@ -30,7 +31,7 @@ export function AdminDashboard() {
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT);
   const [members, setMembers] = useState<MemberDto[]>([]);
   const [serials, setSerials] = useState<Serial[]>([]);
-  const [devices, setDevices] = useState<Device[]>(initialDevices);
+  const [devices, setDevices] = useState<DeviceDto[]>([]);
   const navigate = useNavigate();
 
   const loadMembers = useCallback(async () => {
@@ -51,10 +52,20 @@ export function AdminDashboard() {
     }
   }, []);
 
+  const loadDevices = useCallback(async () => {
+    try {
+      const data = await getDevices();
+      setDevices(data.content);
+    } catch (error) {
+      console.error("Failed to load devices:", error);
+    }
+  }, []);
+
   useEffect(() => {
     loadMembers();
     loadSerials();
-  }, [loadMembers, loadSerials]);
+    loadDevices();
+  }, [loadMembers, loadSerials, loadDevices]);
 
   const dragging = useRef(false);
   const startX = useRef(0);
@@ -247,7 +258,7 @@ export function AdminDashboard() {
                 <Card className="shadow-sm border-slate-200"><CardContent className="p-0 sm:p-6"><SerialManager serials={serials} setSerials={setSerials} onReload={loadSerials} /></CardContent></Card>
               )}
               {tab === "devices" && (
-                <Card className="shadow-sm border-slate-200"><CardContent className="p-0 sm:p-6"><DeviceManager devices={devices} setDevices={setDevices} members={members as any} serials={serials} setSerials={setSerials} /></CardContent></Card>
+                <Card className="shadow-sm border-slate-200"><CardContent className="p-0 sm:p-6"><DeviceManager devices={devices} setDevices={setDevices} members={members} serials={serials} setSerials={setSerials} onReload={loadDevices} /></CardContent></Card>
               )}
             </div>
           </div>
