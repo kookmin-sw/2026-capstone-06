@@ -1,7 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import { Dashboard } from "./pages/user/Dashboard";
 import { Statistics } from "./pages/user/Statistics";
-import { AudioManagement } from "./pages/user/AudioManagement";
 import { FeedWater } from "./pages/user/FeedWater";
 import { Ventilation } from "./pages/user/Ventilation";
 import { SettingsPage } from "./pages/user/Settings";
@@ -30,7 +29,6 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Dashboard },
       { path: "statistics", Component: Statistics },
-      { path: "audio", Component: AudioManagement },
       { path: "feed-water", Component: FeedWater },
       { path: "ventilation", Component: Ventilation },
       { path: "settings", Component: SettingsPage },

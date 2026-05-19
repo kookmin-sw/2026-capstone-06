@@ -7,7 +7,9 @@ import { MemberManager } from "./MemberManager";
 import { SerialManager } from "./SerialManager";
 import { DeviceManager } from "./DeviceManager";
 import { AdminOverview } from "./AdminOverview";
-import { initialMembers, initialSerials, initialDevices, type Member, type Serial, type Device } from "./mockData";
+import { initialDevices, type Serial, type Device } from "./mockData";
+import { getSerials } from "../../services/serialApi";
+import { getMembers, type MemberDto } from "../../services/memberApi";
 
 type TabKey = "overview" | "members" | "serials" | "devices";
 
@@ -26,10 +28,33 @@ export function AdminDashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT);
-  const [members, setMembers] = useState<Member[]>(initialMembers);
-  const [serials, setSerials] = useState<Serial[]>(initialSerials);
+  const [members, setMembers] = useState<MemberDto[]>([]);
+  const [serials, setSerials] = useState<Serial[]>([]);
   const [devices, setDevices] = useState<Device[]>(initialDevices);
   const navigate = useNavigate();
+
+  const loadMembers = useCallback(async () => {
+    try {
+      const data = await getMembers();
+      setMembers(data.content);
+    } catch (error) {
+      console.error("Failed to load members:", error);
+    }
+  }, []);
+
+  const loadSerials = useCallback(async () => {
+    try {
+      const data = await getSerials();
+      setSerials(data.content);
+    } catch (error) {
+      console.error("Failed to load serials:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMembers();
+    loadSerials();
+  }, [loadMembers, loadSerials]);
 
   const dragging = useRef(false);
   const startX = useRef(0);
@@ -214,15 +239,15 @@ export function AdminDashboard() {
                 <span className="font-medium text-slate-700">{breadcrumb}</span>
               </div>
 
-              {tab === "overview" && <AdminOverview members={members} serials={serials} devices={devices} onNavigate={setTab} />}
+              {tab === "overview" && <AdminOverview members={members as any} serials={serials} devices={devices} onNavigate={setTab} />}
               {tab === "members" && (
-                <Card className="shadow-sm border-slate-200"><CardContent className="p-0 sm:p-6"><MemberManager members={members} setMembers={setMembers} /></CardContent></Card>
+                <Card className="shadow-sm border-slate-200"><CardContent className="p-0 sm:p-6"><MemberManager members={members} setMembers={setMembers} onReload={loadMembers} /></CardContent></Card>
               )}
               {tab === "serials" && (
-                <Card className="shadow-sm border-slate-200"><CardContent className="p-0 sm:p-6"><SerialManager serials={serials} setSerials={setSerials} /></CardContent></Card>
+                <Card className="shadow-sm border-slate-200"><CardContent className="p-0 sm:p-6"><SerialManager serials={serials} setSerials={setSerials} onReload={loadSerials} /></CardContent></Card>
               )}
               {tab === "devices" && (
-                <Card className="shadow-sm border-slate-200"><CardContent className="p-0 sm:p-6"><DeviceManager devices={devices} setDevices={setDevices} members={members} serials={serials} setSerials={setSerials} /></CardContent></Card>
+                <Card className="shadow-sm border-slate-200"><CardContent className="p-0 sm:p-6"><DeviceManager devices={devices} setDevices={setDevices} members={members as any} serials={serials} setSerials={setSerials} /></CardContent></Card>
               )}
             </div>
           </div>

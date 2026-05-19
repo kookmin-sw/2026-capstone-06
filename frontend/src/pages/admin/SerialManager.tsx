@@ -6,14 +6,17 @@ import { Badge } from "../../components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../../components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Plus, Pencil, Trash2, Search, Wand2, Play, RotateCcw } from "lucide-react";
+import { addSerial, updateSerial, deleteSerial, toggleSerialUse, generateSerials } from "../../services/serialApi";
+import { toast } from "sonner";
 import type { Serial } from "./mockData";
 
 interface Props {
   serials: Serial[];
   setSerials: React.Dispatch<React.SetStateAction<Serial[]>>;
+  onReload?: () => void;
 }
 
-export function SerialManager({ serials, setSerials }: Props) {
+export function SerialManager({ serials, setSerials, onReload }: Props) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Serial | null>(null);
@@ -26,42 +29,60 @@ export function SerialManager({ serials, setSerials }: Props) {
     [serials, search]
   );
 
-  const nextSeq = () => Math.max(0, ...serials.map(s => s.seq)) + 1;
-  const today = () => new Date().toISOString().slice(0, 10).replace(/-/g, "");
-
   const openAdd = () => { setEditing(null); setForm({ serialNum: "", isUse: false }); setOpen(true); };
   const openEdit = (s: Serial) => { setEditing(s); setForm({ serialNum: s.serialNum, isUse: s.isUse }); setOpen(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!form.serialNum) return;
-    if (editing) {
-      setSerials(prev => prev.map(s => s.seq === editing.seq ? { ...s, ...form } : s));
-    } else {
-      setSerials(prev => [...prev, { seq: nextSeq(), serialNum: form.serialNum, isUse: form.isUse, regDate: new Date().toISOString().slice(0, 19).replace("T", " ") }]);
+    try {
+      if (editing) {
+        await updateSerial(form.serialNum, form.isUse);
+        toast.success("수정되었습니다.");
+      } else {
+        await addSerial(form.serialNum, form.isUse);
+        toast.success("등록되었습니다.");
+      }
+      if (onReload) onReload();
+      setOpen(false);
+    } catch (e) {
+      toast.error("저장 중 오류가 발생했습니다.");
+      console.error(e);
     }
-    setOpen(false);
   };
 
-  const remove = (seq: number) => {
+  const remove = async (seq: number) => {
     if (!confirm("삭제하시겠습니까?")) return;
-    setSerials(prev => prev.filter(s => s.seq !== seq));
+    try {
+      await deleteSerial(seq);
+      toast.success("삭제되었습니다.");
+      if (onReload) onReload();
+    } catch (e) {
+      toast.error("삭제 중 오류가 발생했습니다.");
+      console.error(e);
+    }
   };
 
-  const toggleUse = (s: Serial, isUse: boolean) => {
-    setSerials(prev => prev.map(x => x.seq === s.seq ? { ...x, isUse } : x));
+  const toggleUse = async (s: Serial, isUse: boolean) => {
+    try {
+      await toggleSerialUse(s.serialNum, isUse);
+      toast.success(isUse ? "사용 처리되었습니다." : "미사용 처리되었습니다.");
+      if (onReload) onReload();
+    } catch (e) {
+      toast.error("상태 변경 중 오류가 발생했습니다.");
+      console.error(e);
+    }
   };
 
-  const generate = () => {
-    const date = today();
-    const startIdx = serials.length + 1;
-    const list: Serial[] = Array.from({ length: genCount }, (_, i) => ({
-      seq: nextSeq() + i,
-      serialNum: `${date}-DEV-${String(startIdx + i).padStart(3, "0")}`,
-      isUse: false,
-      regDate: new Date().toISOString().slice(0, 19).replace("T", " "),
-    }));
-    setSerials(prev => [...prev, ...list]);
-    setGenOpen(false);
+  const generate = async () => {
+    try {
+      await generateSerials(genCount);
+      toast.success(`${genCount}개의 시리얼이 생성되었습니다.`);
+      if (onReload) onReload();
+      setGenOpen(false);
+    } catch (e) {
+      toast.error("자동 생성 중 오류가 발생했습니다.");
+      console.error(e);
+    }
   };
 
   return (

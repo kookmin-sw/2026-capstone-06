@@ -15,7 +15,6 @@ export function Header() {
     { path: "/", label: "대시보드", icon: Home },
     { path: "/feed-water", label: "급여/급수", icon: Utensils },
     { path: "/ventilation", label: "환풍기", icon: Wind },
-    { path: "/audio", label: "음성 데이터", icon: Volume2 },
     { path: "/statistics", label: "통계", icon: BarChart3 },
   ];
 

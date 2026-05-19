@@ -5,7 +5,6 @@ import {
   MOCK_FAN_SCHEDULES, 
   MOCK_SUPPLY_SCHEDULES, 
   MOCK_SUPPLY_HISTORY, 
-  MOCK_AUDIO_EVENTS,
   generateStatsData,
   getMockSensorData 
 } from './db';
@@ -65,13 +64,7 @@ export const handlers = [
     });
   }),
 
-  // Audio
-  http.get(`${baseURL}/audio/events`, () => {
-    return HttpResponse.json({
-      content: MOCK_AUDIO_EVENTS,
-      totalElements: MOCK_AUDIO_EVENTS.length,
-    });
-  }),
+
 
   // Statistics
   http.get(`${baseURL}/stats`, ({ request }) => {

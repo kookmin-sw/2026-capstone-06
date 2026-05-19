@@ -79,13 +79,7 @@ export const MOCK_VENTILATION_HISTORY = [
   { id: '5', timestamp: '2026-03-14T13:10:00', duration: 8, intensity: 50, mode: 'manual' },
 ];
 
-export const MOCK_AUDIO_EVENTS = [
-  { id: '1', timestamp: '2026-03-15T14:23:00', date: '2026-03-15', time: '14:23', duration: 5, audioUrl: '#', analyzed: true, severity: 'high', notes: '연속 짖음 감지 - 불안감 표현 가능성' },
-  { id: '2', timestamp: '2026-03-15T13:45:00', date: '2026-03-15', time: '13:45', duration: 3, audioUrl: '#', analyzed: true, severity: 'medium', notes: '외부 소음에 반응' },
-  { id: '3', timestamp: '2026-03-15T12:10:00', date: '2026-03-15', time: '12:10', duration: 2, audioUrl: '#', analyzed: false, severity: 'low' },
-  { id: '4', timestamp: '2026-03-15T10:30:00', date: '2026-03-15', time: '10:30', duration: 4, audioUrl: '#', analyzed: true, severity: 'medium', notes: '일반적인 경계 행동' },
-  { id: '5', timestamp: '2026-03-14T18:15:00', date: '2026-03-14', time: '18:15', duration: 6, audioUrl: '#', analyzed: true, severity: 'high', notes: '분리불안 가능성' },
-];
+
 
 export const generateStatsData = (period: 'daily' | 'weekly' | 'monthly') => {
   if (period === 'daily') {

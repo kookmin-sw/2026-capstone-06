@@ -7,20 +7,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
-import type { Member } from "./mockData";
+import { registerByAdmin, updateByAdmin, deleteMember, checkId, type MemberDto } from "../../services/memberApi";
+import { toast } from "sonner";
 
 interface Props {
-  members: Member[];
-  setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
+  members: MemberDto[];
+  setMembers: React.Dispatch<React.SetStateAction<MemberDto[]>>;
+  onReload?: () => void;
 }
 
-const empty: Member = { memberId: "", memberName: "", memberPhone: "", role: "USER", regDate: "" };
+const empty: any = { seq: 0, memberId: "", memberPw: "", memberName: "", memberPhone: "", roleCode: "USER", roleName: "일반회원", regDate: "", enabled: true };
 
-export function MemberManager({ members, setMembers }: Props) {
+export function MemberManager({ members, setMembers, onReload }: Props) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Member | null>(null);
-  const [form, setForm] = useState<Member>(empty);
+  const [editing, setEditing] = useState<MemberDto | null>(null);
+  const [form, setForm] = useState<any>(empty);
 
   const filtered = useMemo(
     () => members.filter(m =>
@@ -30,25 +32,45 @@ export function MemberManager({ members, setMembers }: Props) {
   );
 
   const openAdd = () => { setEditing(null); setForm(empty); setOpen(true); };
-  const openEdit = (m: Member) => { setEditing(m); setForm(m); setOpen(true); };
+  const openEdit = (m: MemberDto) => { setEditing(m); setForm({ ...m, memberPw: "" }); setOpen(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!form.memberId || !form.memberName) return;
-    if (editing) {
-      setMembers(prev => prev.map(m => m.memberId === editing.memberId ? form : m));
-    } else {
-      if (members.some(m => m.memberId === form.memberId)) {
-        alert("이미 존재하는 아이디입니다");
-        return;
+    try {
+      if (editing) {
+        await updateByAdmin(form);
+        toast.success("회원 정보가 수정되었습니다.");
+      } else {
+        if (!form.memberPw) {
+          toast.error("비밀번호를 입력해주세요.");
+          return;
+        }
+        const available = await checkId(form.memberId);
+        if (!available) {
+          toast.error("이미 존재하는 아이디입니다.");
+          return;
+        }
+        await registerByAdmin(form);
+        toast.success("회원이 추가되었습니다.");
       }
-      setMembers(prev => [...prev, { ...form, regDate: new Date().toISOString().slice(0, 19).replace("T", " ") }]);
+      if (onReload) onReload();
+      setOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("저장 중 오류가 발생했습니다.");
     }
-    setOpen(false);
   };
 
-  const remove = (id: string) => {
+  const remove = async (seq: number, id: string) => {
     if (!confirm(`회원 ${id} 을(를) 삭제하시겠습니까?`)) return;
-    setMembers(prev => prev.filter(m => m.memberId !== id));
+    try {
+      await deleteMember(seq, id);
+      toast.success("삭제되었습니다.");
+      if (onReload) onReload();
+    } catch (error) {
+      console.error(error);
+      toast.error("삭제 중 오류가 발생했습니다.");
+    }
   };
 
   return (
@@ -70,6 +92,10 @@ export function MemberManager({ members, setMembers }: Props) {
                 <Input value={form.memberId} disabled={!!editing} onChange={(e) => setForm({ ...form, memberId: e.target.value })} />
               </div>
               <div className="space-y-2">
+                <Label>비밀번호</Label>
+                <Input type="password" value={form.memberPw || ""} placeholder={editing ? "변경할 경우에만 입력" : "비밀번호 입력 (필수)"} onChange={(e) => setForm({ ...form, memberPw: e.target.value })} />
+              </div>
+              <div className="space-y-2">
                 <Label>이름</Label>
                 <Input value={form.memberName} onChange={(e) => setForm({ ...form, memberName: e.target.value })} />
               </div>
@@ -79,11 +105,11 @@ export function MemberManager({ members, setMembers }: Props) {
               </div>
               <div className="space-y-2">
                 <Label>권한</Label>
-                <Select value={form.role} onValueChange={(v: "USER" | "ADMIN") => setForm({ ...form, role: v })}>
+                <Select value={form.roleCode} onValueChange={(v: "USER" | "ADMIN") => setForm({ ...form, roleCode: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="USER">USER</SelectItem>
-                    <SelectItem value="ADMIN">ADMIN</SelectItem>
+                    <SelectItem value="USER">일반회원</SelectItem>
+                    <SelectItem value="ADMIN">관리자</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -110,17 +136,17 @@ export function MemberManager({ members, setMembers }: Props) {
           </TableHeader>
           <TableBody>
             {filtered.map((m) => (
-              <TableRow key={m.memberId}>
+              <TableRow key={m.seq}>
                 <TableCell>{m.memberId}</TableCell>
                 <TableCell>{m.memberName}</TableCell>
                 <TableCell>{m.memberPhone}</TableCell>
                 <TableCell>
-                  <Badge variant={m.role === "ADMIN" ? "default" : "secondary"}>{m.role}</Badge>
+                  <Badge variant={m.roleCode === "ADMIN" ? "default" : "secondary"}>{m.roleName}</Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{m.regDate}</TableCell>
                 <TableCell className="text-right">
                   <Button size="sm" variant="ghost" onClick={() => openEdit(m)}><Pencil className="w-4 h-4" /></Button>
-                  <Button size="sm" variant="ghost" onClick={() => remove(m.memberId)}><Trash2 className="w-4 h-4 text-red-600" /></Button>
+                  <Button size="sm" variant="ghost" onClick={() => remove(m.seq, m.memberId)}><Trash2 className="w-4 h-4 text-red-600" /></Button>
                 </TableCell>
               </TableRow>
             ))}

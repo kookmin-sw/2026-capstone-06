@@ -1,67 +1,67 @@
 import apiClient from './axios';
 
-export interface MemberSimpleResponse {
+export interface MemberDto {
   seq: number;
   memberId: string;
   memberName: string;
   memberPhone: string;
-  roleCode: string;
+  roleCode: "ADMIN" | "USER";
   roleName: string;
   regDate: string;
+  enabled: boolean;
 }
 
-export interface MemberModifyRequest {
-  seq: number;
-  member_id: string;
-  member_pw?: string;
-  member_name: string;
-  member_phone: string;
-  role_code?: string;
+export interface MemberPageResponse {
+  content: MemberDto[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
 }
 
-/**
- * 회원 정보 조회
- */
-export const getMemberByMemberId = async (memberId: string): Promise<MemberSimpleResponse> => {
-  const { data } = await apiClient.get<MemberSimpleResponse>(`/member/id/${memberId}`);
-  return data;
-};
-
-/**
- * 회원 정보 수정
- */
-export const updateMember = async (payload: MemberModifyRequest): Promise<MemberSimpleResponse> => {
-  const { data } = await apiClient.put<MemberSimpleResponse>('/member', payload);
-  return data;
-};
-
-/**
- * 회원 탈퇴 신청 (계정 비활성화)
- */
-export const deactivateMember = async (memberId: string, memberPw: string): Promise<MemberSimpleResponse> => {
-  const { data } = await apiClient.patch<MemberSimpleResponse>('/member/deactivate', {
-    memberId,
-    memberPw,
+export const getMembers = async (searchType?: string, searchQuery?: string): Promise<MemberPageResponse> => {
+  const { data } = await apiClient.get<MemberPageResponse>('/member/list', {
+    params: { searchType, searchQuery, size: 1000 }
   });
   return data;
 };
 
-/**
- * 회원 탈퇴 취소 (계정 재활성화)
- */
-export const reactivateMember = async (memberId: string): Promise<MemberSimpleResponse> => {
-  const { data } = await apiClient.patch<MemberSimpleResponse>('/member/reactivate', {
-    memberId,
+export const checkId = async (memberId: string): Promise<boolean> => {
+  const { data } = await apiClient.get<{ available: boolean }>('/member/checkId', {
+    params: { memberId }
+  });
+  return data.available;
+};
+
+export const registerByAdmin = async (req: any): Promise<MemberDto> => {
+  // MemberRegisterRequest
+  const { data } = await apiClient.post<MemberDto>('/member/form', {
+    member_id: req.memberId,
+    member_pw: req.memberPw,
+    member_name: req.memberName,
+    member_phone: req.memberPhone,
+    role_code: req.roleCode
   });
   return data;
 };
 
-/**
- * 회원 계정 상태 조회 (enabled 여부)
- */
-export const getAccountStatus = async (memberId: string): Promise<{ enabled: boolean }> => {
-  const { data } = await apiClient.get<{ enabled: boolean }>('/member/status', {
-    params: { memberId },
+export const updateByAdmin = async (req: any): Promise<MemberDto> => {
+  // MemberModifyRequest
+  const { data } = await apiClient.put<MemberDto>('/member/form', {
+    seq: req.seq,
+    member_id: req.memberId,
+    member_pw: req.memberPw,
+    member_name: req.memberName,
+    member_phone: req.memberPhone,
+    role_code: req.roleCode
+  });
+  return data;
+};
+
+export const deleteMember = async (seq: number, memberId: string): Promise<any> => {
+  // MemberDeleteRequest
+  const { data } = await apiClient.delete('/member', {
+    data: { seq, member_id: memberId }
   });
   return data;
 };
