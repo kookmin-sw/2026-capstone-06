@@ -104,6 +104,40 @@ export interface FanScheduleRequest {
   enabled: boolean;
 }
 
+export interface FanControlRequest {
+  isRunning: boolean;
+  intensity: number;
+}
+
+export interface FanControlResponse {
+  houseId: number;
+  isRunning: boolean;
+  intensity: number;
+}
+
+export interface FanAutoModeResponse {
+  houseId: number;
+  isAutoMode: boolean;
+}
+
+export interface FanHistoryResponse {
+  id: number;
+  startTime: string;
+  endTime: string;
+  durationMinutes: number;
+  speed: number;
+  triggerType: 'MANUAL' | 'AUTO';
+  executionStatus: 'SUCCESS' | 'FAIL';
+  createdAt: string;
+}
+
+export interface FanStatsResponse {
+  dailyCount: number;
+  dailyOperatingHours: number;
+  averageIntensity: number;
+  autoModeRatio: number;
+}
+
 // ── Supply (급여/급수) ──────────────────────────────────────────────
 
 /** 백엔드 enum: FOOD, WATER */

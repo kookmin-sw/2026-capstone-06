@@ -1,7 +1,12 @@
 package com.capstone.pethouse.domain.fan.controller;
 
+import com.capstone.pethouse.domain.fan.dto.request.FanControlRequest;
 import com.capstone.pethouse.domain.fan.dto.request.FanScheduleRequest;
+import com.capstone.pethouse.domain.fan.dto.response.FanAutoModeResponse;
+import com.capstone.pethouse.domain.fan.dto.response.FanControlResponse;
+import com.capstone.pethouse.domain.fan.dto.response.FanHistoryResponse;
 import com.capstone.pethouse.domain.fan.dto.response.FanScheduleResponse;
+import com.capstone.pethouse.domain.fan.dto.response.FanStatsResponse;
 import com.capstone.pethouse.domain.fan.dto.response.FanToggleResponse;
 import com.capstone.pethouse.domain.fan.service.FanService;
 import jakarta.validation.Valid;
@@ -64,5 +69,40 @@ public class FanController {
             @PathVariable Long scheduleId
     ) {
         return fanService.deleteFanSchedule(houseId, scheduleId);
+    }
+
+    // 수동 환풍기 제어
+    @PostMapping("/{houseId}/fan/control")
+    public FanControlResponse controlFan(
+            @PathVariable Long houseId,
+            @Valid @RequestBody FanControlRequest request
+    ) {
+        return fanService.controlFan(houseId, request);
+    }
+
+    // 환풍기 전체 자동 모드 설정
+    @PatchMapping("/{houseId}/fan/auto-mode")
+    public FanAutoModeResponse toggleFanAutoMode(
+            @PathVariable Long houseId,
+            @RequestParam boolean isAutoMode
+    ) {
+        return fanService.toggleFanAutoMode(houseId, isAutoMode);
+    }
+
+    // 환풍기 최근 작동 이력 조회
+    @GetMapping("/{houseId}/fan/history")
+    public Page<FanHistoryResponse> getFanHistory(
+            @PathVariable Long houseId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return fanService.getFanHistory(houseId, pageable);
+    }
+
+    // 환풍기 오늘 작동 통계 조회
+    @GetMapping("/{houseId}/fan/statistics")
+    public FanStatsResponse getFanStatistics(
+            @PathVariable Long houseId
+    ) {
+        return fanService.getFanStatistics(houseId);
     }
 }

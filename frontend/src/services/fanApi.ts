@@ -4,6 +4,11 @@ import type {
   FanScheduleResponse,
   FanScheduleRequest,
   FanToggleResponse,
+  FanControlRequest,
+  FanControlResponse,
+  FanAutoModeResponse,
+  FanHistoryResponse,
+  FanStatsResponse,
 } from '../types/api';
 
 /**
@@ -70,6 +75,54 @@ export const deleteFanSchedule = async (
 ): Promise<number> => {
   const { data } = await apiClient.delete<number>(
     `/devices/${houseId}/fan/schedules/${scheduleId}`,
+  );
+  return data;
+};
+
+/** 환풍기 수동 제어 */
+export const controlFan = async (
+  houseId: number | string,
+  request: FanControlRequest,
+): Promise<FanControlResponse> => {
+  const { data } = await apiClient.post<FanControlResponse>(
+    `/devices/${houseId}/fan/control`,
+    request,
+  );
+  return data;
+};
+
+/** 환풍기 전체 자동 모드 설정 */
+export const toggleFanAutoMode = async (
+  houseId: number | string,
+  isAutoMode: boolean,
+): Promise<FanAutoModeResponse> => {
+  const { data } = await apiClient.patch<FanAutoModeResponse>(
+    `/devices/${houseId}/fan/auto-mode`,
+    null,
+    { params: { isAutoMode } },
+  );
+  return data;
+};
+
+/** 환풍기 최근 작동 이력 조회 */
+export const getFanHistory = async (
+  houseId: number | string,
+  page = 0,
+  size = 10,
+): Promise<Page<FanHistoryResponse>> => {
+  const { data } = await apiClient.get<Page<FanHistoryResponse>>(
+    `/devices/${houseId}/fan/history`,
+    { params: { page, size } },
+  );
+  return data;
+};
+
+/** 환풍기 오늘 작동 통계 조회 */
+export const getFanStatistics = async (
+  houseId: number | string,
+): Promise<FanStatsResponse> => {
+  const { data } = await apiClient.get<FanStatsResponse>(
+    `/devices/${houseId}/fan/statistics`,
   );
   return data;
 };

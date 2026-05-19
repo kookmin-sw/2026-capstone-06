@@ -61,11 +61,14 @@ public class PetHouse extends AuditingFields {
 
     private LocalDate objectBirth;
 
+    @Column(nullable = false)
+    private Boolean isFanAutoMode = false;
+
     @ToString.Exclude
     @OneToMany(mappedBy = "petHouse", cascade = CascadeType.ALL)
     private List<Device> devices = new ArrayList<>();
 
-    private PetHouse(User user, String nickname, PetHouseStatus petHouseStatus, Boolean isOccupied, LocalDateTime lastConnectedAt, Code objectCode, String objectName, java.time.LocalDate objectBirth) {
+    private PetHouse(User user, String nickname, PetHouseStatus petHouseStatus, Boolean isOccupied, LocalDateTime lastConnectedAt, Code objectCode, String objectName, java.time.LocalDate objectBirth, Boolean isFanAutoMode) {
         this.user = user;
         this.nickname = nickname;
         this.petHouseStatus = petHouseStatus;
@@ -74,10 +77,11 @@ public class PetHouse extends AuditingFields {
         this.objectCode = objectCode;
         this.objectName = objectName;
         this.objectBirth = objectBirth;
+        this.isFanAutoMode = isFanAutoMode;
     }
 
     public static PetHouse of(User user, String nickname, PetHouseStatus petHouseStatus, Boolean isOccupied, LocalDateTime lastConnectedAt, Code objectCode, String objectName, java.time.LocalDate objectBirth) {
-        return new PetHouse(user, nickname, petHouseStatus, isOccupied, lastConnectedAt, objectCode, objectName, objectBirth);
+        return new PetHouse(user, nickname, petHouseStatus, isOccupied, lastConnectedAt, objectCode, objectName, objectBirth, false);
     }
 
     public static PetHouse createDefault(User user, String nickname, Code objectCode, String objectName, LocalDate objectBirth) {
@@ -89,8 +93,13 @@ public class PetHouse extends AuditingFields {
                 LocalDateTime.now(),
                 objectCode,
                 objectName,
-                objectBirth
+                objectBirth,
+                false
         );
+    }
+
+    public void toggleFanAutoMode(boolean isAutoMode) {
+        this.isFanAutoMode = isAutoMode;
     }
 
     public void updatePetInfo(Code objectCode, String objectName, LocalDate objectBirth) {

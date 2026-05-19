@@ -71,6 +71,18 @@ function toAutoRule(res: FanScheduleResponse): AutoRule {
   };
 }
 
+/** 백엔드 FanHistoryResponse → 프론트 VentilationHistory 변환 */
+function toVentilationHistory(res: any): VentilationHistory {
+  return {
+    id: String(res.id),
+    timestamp: res.startTime ?? res.createdAt,
+    duration: res.durationMinutes ?? 0,
+    intensity: res.speed ?? 0,
+    mode: res.triggerType?.toLowerCase() === 'auto' ? 'auto' : 'manual',
+    trigger: res.executionStatus === 'SUCCESS' ? undefined : '실패',
+  };
+}
+
 
 export function Ventilation() {
   const { activeHouse } = usePetHouse();
@@ -80,20 +92,35 @@ export function Ventilation() {
 
   const [autoRules, setAutoRules] = useState<AutoRule[]>([]);
   const [history, setHistory] = useState<VentilationHistory[]>([]);
+  const [statistics, setStatistics] = useState<any>(null);
 
-  // API에서 환풍기 스케줄 가져오기
+  const fetchSchedules = async () => {
+    try {
+      if (!activeHouse?.id) return;
+      const page = await fanApi.getFanSchedules(activeHouse.id);
+      setAutoRules(page.content.map(toAutoRule));
+    } catch (error) {
+      console.error('[Ventilation] API Fetch Error:', error);
+    }
+  };
+
+  const fetchHistoryAndStatistics = async () => {
+    try {
+      if (!activeHouse?.id) return;
+      const stats = await fanApi.getFanStatistics(activeHouse.id);
+      setStatistics(stats);
+
+      const histPage = await fanApi.getFanHistory(activeHouse.id, 0, 10);
+      setHistory(histPage.content.map(toVentilationHistory));
+    } catch (error) {
+      console.error('[Ventilation] Fetch History/Stats Error:', error);
+    }
+  };
+
+  // API에서 환풍기 데이터 가져오기
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const page = await fanApi.getFanSchedules(activeHouse.id);
-        setAutoRules(page.content.map(toAutoRule));
-        // Note: 백엔드에 history API가 아직 없으므로 나중에 추가 필요
-        // 현재는 MSW에서 mock 데이터를 내려줄 수 있음 (필요 시 API 추가 정의)
-      } catch (error) {
-        console.error('[Ventilation] API Fetch Error:', error);
-      }
-    };
-    fetchData();
+    fetchSchedules();
+    fetchHistoryAndStatistics();
   }, [activeHouse.id]);
 
   const [newRule, setNewRule] = useState({ ...defaultNewRule, conditions: [{ ...defaultCondition }] });
@@ -103,36 +130,66 @@ export function Ventilation() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
 
-  const handleToggleVentilation = () => {
-    setIsRunning(!isRunning);
-    if (!isRunning) {
-      toast.success(`환풍기 작동 시작 (강도: ${intensity}%)`);
-      if (autoMode) {
-        setAutoMode(false);
-        toast.info("수동 제어 시작으로 자동 모드가 비활성화되었습니다");
+  const handleToggleVentilation = async () => {
+    const nextState = !isRunning;
+    try {
+      await fanApi.controlFan(activeHouse.id, {
+        isRunning: nextState,
+        intensity: intensity
+      });
+      setIsRunning(nextState);
+      if (nextState) {
+        toast.success(`환풍기 작동 시작 (강도: ${intensity}%)`);
+        if (autoMode) {
+          setAutoMode(false);
+          toast.info("수동 제어 시작으로 자동 모드가 비활성화되었습니다");
+        }
+      } else {
+        toast.info("환풍기 중지");
       }
-    } else {
-      toast.info("환풍기 중지");
+      await fetchHistoryAndStatistics();
+    } catch (error) {
+      console.error(error);
+      toast.error("환풍기 제어에 실패했습니다");
     }
   };
 
-  const handleIntensityChange = (value: number[]) => {
-    setIntensity(value[0]);
+  const handleIntensityChange = async (value: number[]) => {
+    const newIntensity = value[0];
+    setIntensity(newIntensity);
     if (isRunning) {
-      toast.info(`강도 변경: ${value[0]}%`);
+      try {
+        await fanApi.controlFan(activeHouse.id, {
+          isRunning: true,
+          intensity: newIntensity
+        });
+        toast.info(`강도 변경: ${newIntensity}%`);
+        await fetchHistoryAndStatistics();
+      } catch (error) {
+        console.error(error);
+        toast.error("강도 변경에 실패했습니다");
+      }
     }
   };
 
-    const handleAutoVentilation = () => {
-    setAutoMode(!autoMode);
-    if(!autoMode) {
-      toast.success("자동 환풍기 가동");
-      if(isRunning) {
-        setIsRunning(false);
-        toast.info("자동 제어 시작으로 수동 모드가 비활성되었습니다");
+    const handleAutoVentilation = async () => {
+    const nextMode = !autoMode;
+    try {
+      await fanApi.toggleFanAutoMode(activeHouse.id, nextMode);
+      setAutoMode(nextMode);
+      if (nextMode) {
+        toast.success("자동 환풍기 가동");
+        if (isRunning) {
+          setIsRunning(false);
+          toast.info("자동 제어 시작으로 수동 모드가 비활성되었습니다");
+        }
+      } else {
+        toast.info("자동 환풍기 중지");
       }
-    } else {
-      toast.info("자동 환풍기 중지");
+      await fetchHistoryAndStatistics();
+    } catch (error) {
+      console.error(error);
+      toast.error("자동 모드 설정에 실패했습니다");
     }
   }
 
@@ -158,19 +215,28 @@ export function Ventilation() {
     setNewRule({ ...newRule, conditions: updated });
   };
 
-  const handleAddRule = () => {
-    const sorted = [...newRule.conditions].sort((a, b) => a.temp - b.temp);
-    const rule: AutoRule = {
-      id: Date.now().toString(),
-      timeStart: newRule.timeStart,
-      timeEnd: newRule.timeEnd,
-      conditions: sorted,
-      enabled: true,
-    };
-    setAutoRules([...autoRules, rule]);
-    setNewRule({ timeStart: '09:00', timeEnd: '21:00', conditions: [{ ...defaultCondition }] });
-    setAddDialogOpen(false);
-    toast.success("규칙이 추가되었습니다");
+  const handleAddRule = async () => {
+    try {
+      const sorted = [...newRule.conditions].sort((a, b) => a.temp - b.temp);
+      const request = {
+        startTime: `${newRule.timeStart}:00`,
+        endTime: `${newRule.timeEnd}:00`,
+        enabled: true,
+        fanScheduleDetailRequestList: sorted.map(c => ({
+          temperature: c.temp,
+          speed: c.intensity
+        }))
+      };
+      await fanApi.createFanSchedule(activeHouse.id, request);
+      setNewRule({ timeStart: '09:00', timeEnd: '21:00', conditions: [{ ...defaultCondition }] });
+      setAddDialogOpen(false);
+      await fetchSchedules();
+      await fetchHistoryAndStatistics();
+      toast.success("규칙이 추가되었습니다");
+    } catch (error) {
+      console.error(error);
+      toast.error("규칙 추가에 실패했습니다");
+    }
   };
 
 
@@ -200,13 +266,29 @@ export function Ventilation() {
     setEditingRule({ ...editingRule, conditions: updated });
   };
 
-  const handleDeleteRule = (id: string) => {
-    setAutoRules(autoRules.filter(r => r.id !== id));
-    toast.success("규칙이 삭제되었습니다");
+  const handleDeleteRule = async (id: string) => {
+    try {
+      await fanApi.deleteFanSchedule(activeHouse.id, Number(id));
+      await fetchSchedules();
+      await fetchHistoryAndStatistics();
+      toast.success("규칙이 삭제되었습니다");
+    } catch (error) {
+      console.error(error);
+      toast.error("규칙 삭제에 실패했습니다");
+    }
   };
 
-  const handleToggleRule = (id: string) => {
-    setAutoRules(autoRules.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
+  const handleToggleRule = async (id: string) => {
+    try {
+      const rule = autoRules.find(r => r.id === id);
+      if (!rule) return;
+      await fanApi.toggleFanSchedule(activeHouse.id, Number(id), !rule.enabled);
+      await fetchSchedules();
+      await fetchHistoryAndStatistics();
+    } catch (error) {
+      console.error(error);
+      toast.error("규칙 상태 변경에 실패했습니다");
+    }
   };
 
   const handleEditRule = (rule: AutoRule) => {
@@ -214,13 +296,29 @@ export function Ventilation() {
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveEditRule = () => {
+  const handleSaveEditRule = async () => {
     if (!editingRule) return;
-    const sorted = [...editingRule.conditions].sort((a, b) => a.temp - b.temp);
-    setAutoRules(autoRules.map(r => r.id === editingRule.id ? { ...editingRule, conditions: sorted } : r));
-    setIsEditDialogOpen(false);
-    setEditingRule(null);
-    toast.success("규칙이 수정되었습니다");
+    try {
+      const sorted = [...editingRule.conditions].sort((a, b) => a.temp - b.temp);
+      const request = {
+        startTime: `${editingRule.timeStart}:00`,
+        endTime: `${editingRule.timeEnd}:00`,
+        enabled: editingRule.enabled,
+        fanScheduleDetailRequestList: sorted.map(c => ({
+          temperature: c.temp,
+          speed: c.intensity
+        }))
+      };
+      await fanApi.updateFanSchedule(activeHouse.id, Number(editingRule.id), request);
+      setIsEditDialogOpen(false);
+      setEditingRule(null);
+      await fetchSchedules();
+      await fetchHistoryAndStatistics();
+      toast.success("규칙이 수정되었습니다");
+    } catch (error) {
+      console.error(error);
+      toast.error("규칙 수정에 실패했습니다");
+    }
   };
 
   const toggleExpand = (id: string) => {
@@ -756,7 +854,7 @@ export function Ventilation() {
                 <Wind className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900">12</div>
+                <div className="text-2xl font-bold text-gray-900">{statistics?.dailyCount ?? 0}</div>
                 <div className="text-sm text-gray-500">오늘 작동 횟수</div>
               </div>
             </div>
@@ -769,7 +867,7 @@ export function Ventilation() {
                 <Clock className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900">2.5시간</div>
+                <div className="text-2xl font-bold text-gray-900">{statistics?.dailyOperatingHours ?? 0}시간</div>
                 <div className="text-sm text-gray-500">오늘 총 작동 시간</div>
               </div>
             </div>
@@ -782,7 +880,7 @@ export function Ventilation() {
                 <TrendingUp className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900">68%</div>
+                <div className="text-2xl font-bold text-gray-900">{statistics?.averageIntensity ?? 0}%</div>
                 <div className="text-sm text-gray-500">평균 작동 강도</div>
               </div>
             </div>
@@ -795,7 +893,7 @@ export function Ventilation() {
                 <Settings className="w-5 h-5 text-orange-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900">85%</div>
+                <div className="text-2xl font-bold text-gray-900">{statistics?.autoModeRatio ?? 0}%</div>
                 <div className="text-sm text-gray-500">자동 모드 비율</div>
               </div>
             </div>

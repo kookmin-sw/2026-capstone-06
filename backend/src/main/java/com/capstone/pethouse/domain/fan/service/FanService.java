@@ -1,13 +1,21 @@
 package com.capstone.pethouse.domain.fan.service;
 
+import com.capstone.pethouse.domain.fan.entity.FanLog;
 import com.capstone.pethouse.domain.device.entity.PetHouse;
 import com.capstone.pethouse.domain.device.repository.PetHouseRepository;
+import com.capstone.pethouse.domain.fan.dto.request.FanControlRequest;
 import com.capstone.pethouse.domain.fan.dto.request.FanScheduleDetailRequest;
 import com.capstone.pethouse.domain.fan.dto.request.FanScheduleRequest;
+import com.capstone.pethouse.domain.fan.dto.response.FanAutoModeResponse;
+import com.capstone.pethouse.domain.fan.dto.response.FanControlResponse;
+import com.capstone.pethouse.domain.fan.dto.response.FanHistoryResponse;
 import com.capstone.pethouse.domain.fan.dto.response.FanScheduleResponse;
+import com.capstone.pethouse.domain.fan.dto.response.FanStatsResponse;
 import com.capstone.pethouse.domain.fan.dto.response.FanToggleResponse;
 import com.capstone.pethouse.domain.fan.entity.FanSchedule;
+import com.capstone.pethouse.domain.fan.repository.FanLogRepository;
 import com.capstone.pethouse.domain.fan.repository.FanScheduleRepository;
+import com.capstone.pethouse.infra.mqtt.MqttCommandService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,8 +23,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @Transactional
@@ -25,6 +39,8 @@ public class FanService {
 
     private final FanScheduleRepository fanScheduleRepository;
     private final PetHouseRepository petHouseRepository;
+    private final MqttCommandService mqttCommandService;
+    private final FanLogRepository fanLogRepository;
 
     @Transactional(readOnly = true)
     public Page<FanScheduleResponse> getFanSchedules(Long houseId, Pageable pageable) {
@@ -92,6 +108,79 @@ public class FanService {
         fanScheduleRepository.delete(fanSchedule);
 
         return fanSchedule.getId();
+    }
+
+    public FanControlResponse controlFan(Long houseId, FanControlRequest request) {
+        // 1. 펫하우스 존재 여부 확인
+        petHouseRepository.findById(houseId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 펫하우스를 찾을 수 없습니다."));
+
+        // 2. MQTT 제어 명령 전송
+        Map<String, Object> params = Map.of(
+                "isRunning", request.isRunning(),
+                "intensity", request.intensity()
+        );
+        mqttCommandService.sendCommand(houseId, "fanControl", params);
+
+        return FanControlResponse.of(houseId, request.isRunning(), request.intensity());
+    }
+
+    public FanAutoModeResponse toggleFanAutoMode(Long houseId, boolean isAutoMode) {
+        PetHouse petHouse = petHouseRepository.findById(houseId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 펫하우스를 찾을 수 없습니다."));
+
+        petHouse.toggleFanAutoMode(isAutoMode);
+
+        // 시나리오 1(서버 주도 자동 제어) 채택으로, 기기 자체에는 자동/수동 모드 상태를 전송하지 않습니다.
+        // 향후 서버의 백그라운드 스케줄러(또는 센서 데이터 수신 핸들러)가 온도값을 모니터링하며 기기에 fanControl 명령만 하향 전송합니다.
+
+        return FanAutoModeResponse.of(houseId, petHouse.getIsFanAutoMode());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<FanHistoryResponse> getFanHistory(Long houseId, Pageable pageable) {
+        petHouseRepository.findById(houseId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 펫하우스를 찾을 수 없습니다."));
+
+        return fanLogRepository.findByPetHouse_HouseId(houseId, pageable)
+                .map(FanHistoryResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public FanStatsResponse getFanStatistics(Long houseId) {
+        petHouseRepository.findById(houseId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 펫하우스를 찾을 수 없습니다."));
+
+        LocalDateTime startOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
+        LocalDateTime endOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+
+        List<FanLog> logs = 
+                fanLogRepository.findByPetHouse_HouseIdAndCreatedAtBetween(houseId, startOfDay, endOfDay);
+
+        if (logs.isEmpty()) {
+            return FanStatsResponse.of(0L, 0.0, 0, 0);
+        }
+
+        long dailyCount = logs.size();
+        long totalMinutes = 0;
+        long totalSpeed = 0;
+        long autoCount = 0;
+
+        for (com.capstone.pethouse.domain.fan.entity.FanLog log : logs) {
+            if (log.getStartTime() != null && log.getEndTime() != null) {
+                totalMinutes += Duration.between(log.getStartTime(), log.getEndTime()).toMinutes();
+            }
+            totalSpeed += log.getSpeed();
+            if (com.capstone.pethouse.domain.enums.TriggerType.AUTO.equals(log.getTriggerType())) {
+                autoCount++;
+            }
+        }
+
+        double operatingHours = Math.round((totalMinutes / 60.0) * 10.0) / 10.0;
+        int averageIntensity = (int) (totalSpeed / dailyCount);
+        int autoModeRatio = (int) Math.round((double) autoCount * 100 / dailyCount);
+
+        return FanStatsResponse.of(dailyCount, operatingHours, averageIntensity, autoModeRatio);
     }
 
     private void validateFanSpeedLogic(List<FanScheduleDetailRequest> detailRequestList) {
