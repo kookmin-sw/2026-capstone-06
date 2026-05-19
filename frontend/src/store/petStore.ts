@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import apiClient from "../services/axios";
 
 export interface PetHouse {
   id: string;
@@ -8,15 +9,20 @@ export interface PetHouse {
   location: string;
   online: boolean;
   color: string; // tailwind color key
+  serialNum?: string; // 기기의 실제 serialNum (차트/센서 API에 사용)
+  deviceId?: string;  // 기기의 deviceId (센서 실시간 API에 사용)
 }
 
 interface PetHouseState {
   houses: PetHouse[];
   activeHouseId: string;
+  isLoaded: boolean; // 백엔드에서 실제 데이터 로드 여부
   setActiveHouse: (house: PetHouse) => void;
   addHouse: (house: Omit<PetHouse, "id">) => void;
   removeHouse: (id: string) => void;
   updateHouse: (id: string, data: Partial<Omit<PetHouse, "id">>) => void;
+  loadDevicesFromServer: (memberId: string) => Promise<void>;
+  resetToDefault: () => void;
 }
 
 export const COLORS = [
@@ -50,29 +56,12 @@ const initialHouses: PetHouse[] = [
     online: true,
     color: "blue",
   },
-  {
-    id: "2",
-    name: "2번 하우스",
-    petName: "나비",
-    petType: "cat",
-    location: "안방",
-    online: true,
-    color: "purple",
-  },
-  {
-    id: "3",
-    name: "3번 하우스",
-    petName: "망고",
-    petType: "dog",
-    location: "베란다",
-    online: false,
-    color: "orange",
-  },
 ];
 
 export const usePetStore = create<PetHouseState>((set, get) => ({
   houses: initialHouses,
   activeHouseId: initialHouses[0].id,
+  isLoaded: false,
 
   setActiveHouse: (house) => set({ activeHouseId: house.id }),
 
@@ -110,7 +99,56 @@ export const usePetStore = create<PetHouseState>((set, get) => ({
     set((state) => ({
       houses: state.houses.map((h) => (h.id === id ? { ...h, ...data } : h))
     }));
-  }
+  },
+
+  /**
+   * 백엔드 GET /dashboard/devices?memberId=... API로 기기 목록을 불러와
+   * petStore의 houses 상태를 실제 데이터로 교체합니다.
+   */
+  loadDevicesFromServer: async (memberId: string) => {
+    try {
+      const { data } = await apiClient.get<Array<{
+        seq: number;
+        deviceId: string;
+        memberId: string;
+        serialNum: string;
+        deviceType: string;
+        isUse: boolean;
+        regDate: string;
+      }>>('/dashboard/devices', { params: { memberId } });
+
+      // deviceType === 'HOUSE'인 기기만 펫하우스로 등록
+      const houseDevices = data.filter((d) => d.deviceType === 'HOUSE' && d.isUse);
+
+      if (houseDevices.length === 0) {
+        // 연결된 기기가 없으면 기본 더미 유지
+        return;
+      }
+
+      const houses: PetHouse[] = houseDevices.map((d, index) => ({
+        id: String(d.seq),
+        name: `펫하우스 ${index + 1}`,
+        petName: '-',
+        petType: 'dog' as const,
+        location: '-',
+        online: true,
+        color: COLORS[index % COLORS.length],
+        serialNum: d.serialNum,
+        deviceId: d.deviceId,
+      }));
+
+      set({
+        houses,
+        activeHouseId: houses[0].id,
+        isLoaded: true,
+      });
+    } catch (error) {
+      console.error('[petStore] 기기 목록 로드 실패:', error);
+    }
+  },
+
+  resetToDefault: () =>
+    set({ houses: initialHouses, activeHouseId: initialHouses[0].id, isLoaded: false }),
 }));
 
 // Provide the same hook signature for backwards compatibility

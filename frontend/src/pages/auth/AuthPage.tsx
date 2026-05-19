@@ -1,21 +1,51 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { ShieldCheck, Mail, Lock, User } from "lucide-react";
+import { toast } from "sonner";
+import * as authApi from "../../services/authApi";
+import { useAuthStore } from "../../store/authStore";
+import { usePetStore } from "../../store/petStore";
 
 export function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [memberId, setMemberId] = useState("");
+  const [memberPw, setMemberPw] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { setTokens, setMemberId: storeMemberId, setRole } = useAuthStore();
+  const { loadDevicesFromServer } = usePetStore();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // 이메일이 admin@pethouse.com 이면 관리자 페이지로, 아니면 유저 페이지로 이동
-    if (email === "admin@pethouse.com") {
-      navigate("/admin");
-    } else {
+    setIsLoading(true);
+
+    try {
+      // 1. 백엔드 로그인 API 호출 → accessToken, refreshToken 획득
+      const loginRes = await authApi.loginWeb({ memberId, memberPw });
+
+      // 2. 토큰 및 사용자 정보를 authStore에 저장 (localStorage 영속)
+      setTokens(loginRes.accessToken, loginRes.refreshToken);
+      storeMemberId(memberId);
+      setRole(loginRes.role);
+
+      // 3. 역할에 따라 라우팅
+      if (loginRes.role === 'ADMIN') {
+        navigate("/admin");
+        return;
+      }
+
+      // 4. 일반 유저: 기기(펫하우스) 목록을 백엔드에서 로드 → petStore에 저장
+      await loadDevicesFromServer(memberId);
+
+      toast.success("로그인 성공!");
       navigate("/user");
+    } catch (error: any) {
+      console.error('[AuthPage] 로그인 실패:', error);
+      const msg = error?.response?.data?.message ?? "아이디 또는 비밀번호를 확인해 주세요.";
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,14 +107,14 @@ export function AuthPage() {
             )}
             
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">이메일</label>
+              <label className="text-sm font-medium text-slate-700">아이디</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
-                  type="email"
-                  placeholder="admin@pethouse.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text"
+                  placeholder="아이디를 입력하세요"
+                  value={memberId}
+                  onChange={(e) => setMemberId(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-600/20 focus:border-violet-600 transition-all"
                   required
                 />
@@ -105,8 +135,8 @@ export function AuthPage() {
                 <input
                   type="password"
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={memberPw}
+                  onChange={(e) => setMemberPw(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-600/20 focus:border-violet-600 transition-all"
                   required
                 />
@@ -115,9 +145,10 @@ export function AuthPage() {
 
             <button
               type="submit"
-              className="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium py-3 rounded-xl transition-colors mt-6"
+              disabled={isLoading}
+              className="w-full bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white font-medium py-3 rounded-xl transition-colors mt-6"
             >
-              {isLogin ? "로그인" : "가입하기"}
+              {isLoading ? "처리 중..." : isLogin ? "로그인" : "가입하기"}
             </button>
           </form>
         </div>

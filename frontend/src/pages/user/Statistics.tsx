@@ -12,27 +12,68 @@ import {
   Tooltip, 
   Legend, 
   ResponsiveContainer ,
-  BarChart,
-  Bar,
-  Cell
 } from "recharts";
+import { usePetHouse } from "../../store/petStore";
+import * as sensorApi from "../../services/sensorApi";
 
 export function Statistics() {
+  const { activeHouse } = usePetHouse();
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [data, setData] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || '/api'}/stats?period=${period}`);
-        const result = await response.json();
-        setData(result);
+        let range = '-24h';
+        let interval = '1h';
+        
+        if (period === 'weekly') {
+          range = '-7d';
+          interval = '6h';
+        } else if (period === 'monthly') {
+          range = '-30d';
+          interval = '1d';
+        }
+
+        // petStore에 serialNum이 있으면 사용 (로그인 후 loadDevicesFromServer 호출 결과)
+        // 없으면 activeHouse.id로 폴백 (개발 환경 또는 더미 데이터)
+        if (!activeHouse?.id) return;
+        const serialNum = activeHouse.serialNum ?? activeHouse.id;
+        
+        const response = await sensorApi.getChartData(serialNum, range, interval);
+        
+        // 데이터 매핑: SensorResponse -> 차트 데이터
+        const mapped = response.map(item => {
+          let timeLabel = item.regDate;
+          if (item.regDate && item.regDate.length >= 14) {
+            // "yyyyMMddHHmmss" 형식 파싱
+            const y = item.regDate.substring(0, 4);
+            const m = item.regDate.substring(4, 6);
+            const d = item.regDate.substring(6, 8);
+            const h = item.regDate.substring(8, 10);
+            
+            if (period === 'daily') {
+              timeLabel = `${h}:00`;
+            } else {
+              timeLabel = `${m}/${d} ${h}:00`;
+            }
+          }
+          
+          return {
+            time: timeLabel,
+            co2: Math.round(item.coVal || 0),
+            temperature: Number((item.temVal || 0).toFixed(1)),
+            humidity: Math.round(item.humVal || 0)
+          };
+        });
+        
+        setData(mapped);
       } catch (error) {
         console.error('[Stats] Fetch Error:', error);
       }
     };
     fetchData();
-  }, [period]);
+  }, [period, activeHouse]);
 
   return (
     <div className="space-y-6">
@@ -192,59 +233,6 @@ export function Statistics() {
             </CardContent>
           </Card>
 
-                    {/* Barking Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                🐾 짖음 횟수 추이
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data} barCategoryGap="30%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                  <XAxis
-                    dataKey="time"
-                    stroke="#6b7280"
-                    style={{ fontSize: '12px' }}
-                  />
-                  <YAxis
-                    stroke="#6b7280"
-                    style={{ fontSize: '12px' }}
-                    allowDecimals={false}
-                    domain={[0, 'auto']}
-                    label={{ value: '횟수', angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: '12px', fill: '#6b7280' } }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      padding: '12px'
-                    }}
-                    formatter={(value: any) => [`${value}회`, '짖음 횟수']}
-                  />
-                  <Bar dataKey="barking" name="짖음 횟수" radius={[4, 4, 0, 0]}>
-                    {data.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.barking >= 6 ? '#ef4444' : entry.barking >= 3 ? '#f97316' : '#f59e0b'}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-              <div className="mt-4 flex items-center gap-6 text-sm text-gray-500">
-                <span>합계: <span className="font-semibold text-gray-800">{data.reduce((acc, d) => acc + (d.barking ?? 0), 0)}회</span></span>
-                <span>평균: <span className="font-semibold text-gray-800">{(data.reduce((acc, d) => acc + (d.barking ?? 0), 0) / data.length).toFixed(1)}회</span></span>
-                <div className="flex items-center gap-3 ml-auto">
-                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block bg-amber-400"></span> 낮음 (0~2)</span>
-                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block bg-orange-400"></span> 보통 (3~5)</span>
-                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block bg-red-500"></span> 높음 (6+)</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Combined Chart */}
           <Card>
