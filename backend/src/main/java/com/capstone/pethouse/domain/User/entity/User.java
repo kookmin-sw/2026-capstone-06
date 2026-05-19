@@ -80,6 +80,16 @@ public class User extends AuditingFields {
         this.memberPw = encodedPassword;
     }
 
+    /** 탈퇴 신청: 계정 비활성화 */
+    public void deactivate() {
+        this.enabled = false;
+    }
+
+    /** 탈퇴 취소: 계정 재활성화 */
+    public void reactivate() {
+        this.enabled = true;
+    }
+
     @Column(length = 500)
     private String refreshToken;
 

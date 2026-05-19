@@ -47,7 +47,6 @@ export function Statistics() {
           let timeLabel = item.regDate;
           if (item.regDate && item.regDate.length >= 14) {
             // "yyyyMMddHHmmss" 형식 파싱
-            const y = item.regDate.substring(0, 4);
             const m = item.regDate.substring(4, 6);
             const d = item.regDate.substring(6, 8);
             const h = item.regDate.substring(8, 10);

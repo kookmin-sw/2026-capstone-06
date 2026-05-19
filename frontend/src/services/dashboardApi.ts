@@ -21,3 +21,11 @@ export const getDashboardInit = async (memberId: string): Promise<DashboardInitR
   });
   return data;
 };
+
+/** 디바이스 목록 조회 */
+export const getDevices = async (memberId: string): Promise<any[]> => {
+  const { data } = await apiClient.get<any[]>('/dashboard/devices', {
+    params: { memberId },
+  });
+  return data;
+};

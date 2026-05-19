@@ -108,4 +108,25 @@ public class MemberController {
         }
         return ResponseEntity.badRequest().body(Map.of("error", "회원 정보가 일치하지 않습니다."));
     }
+
+    @PatchMapping("/deactivate")
+    public ResponseEntity<MemberSimpleResponse> deactivateMember(@RequestBody Map<String, String> payload) {
+        String memberId = payload.get("memberId");
+        String memberPw = payload.get("memberPw");
+        MemberSimpleResponse response = memberService.deactivateMember(memberId, memberPw);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/reactivate")
+    public ResponseEntity<MemberSimpleResponse> reactivateMember(@RequestBody Map<String, String> payload) {
+        String memberId = payload.get("memberId");
+        MemberSimpleResponse response = memberService.reactivateMember(memberId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Boolean>> getAccountStatus(@RequestParam String memberId) {
+        boolean enabled = memberService.getAccountStatus(memberId);
+        return ResponseEntity.ok(Map.of("enabled", enabled));
+    }
 }

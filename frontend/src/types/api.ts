@@ -204,3 +204,12 @@ export interface SupplyToggleResponse {
   scheduleId: number;
   enabled: boolean;
 }
+
+export interface SensorResponse {
+  seq: number;
+  deviceId: string;
+  temVal: number | null;
+  humVal: number | null;
+  coVal: number | null;
+  regDate: string;
+}

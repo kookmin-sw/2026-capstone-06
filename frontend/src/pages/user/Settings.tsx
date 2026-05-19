@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -11,7 +11,6 @@ import {
     Hash,
     User,
     Barcode,
-    Code2,
     Tag,
     CalendarDays,
     ClipboardList,
@@ -38,6 +37,9 @@ import {
     UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthStore } from "../../store/authStore";
+import * as memberApi from "../../services/memberApi";
+import * as dashboardApi from "../../services/dashboardApi";
 
 // ─────────────────────────────────────────────
 // Types
@@ -45,14 +47,12 @@ import { toast } from "sonner";
 
 interface DeviceInfo {
     seq: number;
-    device_id: string;
-    member_id: string;
-    serial_num: string;
-    object_code: string;
+    deviceId: string;
+    memberId: string;
+    serialNum: string;
     deviceType: string;
-    object_birth: string;
-    reg_date: string;
-    is_use: boolean;
+    regDate: string;
+    isUse: boolean;
 }
 
 interface MemberInfo {
@@ -75,78 +75,6 @@ interface WithdrawStatus {
     withdrawn: boolean;
 }
 
-// ─────────────────────────────────────────────
-// Mock data
-// ─────────────────────────────────────────────
-
-const MOCK_MEMBER: MemberInfo = {
-    memberId: "test123",
-    memberName: "홍길동",
-    memberPhone: "010-1111-2222",
-    memberEmail: "hong@example.com",
-    memberSeq: 1216,
-    regDate: "2024-01-10T09:23:00",
-    role: "USER",
-};
-
-const MOCK_WITHDRAW_STATUS: WithdrawStatus | null = null;
-// Uncomment below to simulate an active withdrawal:
-// const MOCK_WITHDRAW_STATUS: WithdrawStatus | null = {
-//   withdrawId: 42,
-//   memberId: "test123",
-//   memberSeq: 1216,
-//   withdrawDate: "2025-10-13T06:21:50.000+00:00",
-//   expireDate: "2025-10-20T06:21:50.000+00:00",
-//   isWithdrawn: 1,
-//   withdrawn: true,
-// };
-
-const MOCK_DEVICES: DeviceInfo[] = [
-    {
-        seq: 1,
-        device_id: "DEV-20240001",
-        member_id: "MEM-A1001",
-        serial_num: "SN-PH-2024-000123",
-        object_code: "OBJ-DOG-001",
-        deviceType: "PetHouse-v2",
-        object_birth: "2022-03-15",
-        reg_date: "2024-01-10T09:23:00",
-        is_use: true,
-    },
-    {
-        seq: 2,
-        device_id: "DEV-20240002",
-        member_id: "MEM-A1001",
-        serial_num: "SN-PH-2024-000456",
-        object_code: "OBJ-CAT-002",
-        deviceType: "PetHouse-v2",
-        object_birth: "2021-07-22",
-        reg_date: "2024-02-05T14:10:00",
-        is_use: true,
-    },
-    {
-        seq: 3,
-        device_id: "DEV-20230089",
-        member_id: "MEM-B2034",
-        serial_num: "SN-PH-2023-000789",
-        object_code: "OBJ-DOG-003",
-        deviceType: "PetHouse-v1",
-        object_birth: "2020-11-03",
-        reg_date: "2023-08-19T11:55:00",
-        is_use: false,
-    },
-    {
-        seq: 4,
-        device_id: "DEV-20240078",
-        member_id: "MEM-C3098",
-        serial_num: "SN-PH-2024-001102",
-        object_code: "OBJ-OTHER-004",
-        deviceType: "PetHouse-v3",
-        object_birth: "2023-04-30",
-        reg_date: "2024-05-01T08:00:00",
-        is_use: true,
-    },
-];
 
 // ─────────────────────────────────────────────
 // Device field metadata
@@ -159,18 +87,16 @@ const FIELD_META: {
     description: string;
 }[] = [
         { key: "seq", label: "시퀀스 번호", icon: Hash, description: "디바이스 고유 순번" },
-        { key: "device_id", label: "디바이스 ID", icon: Cpu, description: "시스템 내 디바이스 식별자" },
-        { key: "member_id", label: "멤버 ID", icon: User, description: "디바이스 소유 회원 ID" },
-        { key: "serial_num", label: "시리얼 번호", icon: Barcode, description: "하드웨어 고유 시리얼 번호" },
-        { key: "object_code", label: "오브젝트 코드", icon: Code2, description: "펫 오브젝트 분류 코드" },
+        { key: "deviceId", label: "디바이스 ID", icon: Cpu, description: "시스템 내 디바이스 식별자" },
+        { key: "memberId", label: "멤버 ID", icon: User, description: "디바이스 소유 회원 ID" },
+        { key: "serialNum", label: "시리얼 번호", icon: Barcode, description: "하드웨어 고유 시리얼 번호" },
         { key: "deviceType", label: "디바이스 타입", icon: Tag, description: "펫하우스 모델 및 버전" },
-        { key: "object_birth", label: "반려동물 생년월일", icon: CalendarDays, description: "등록된 반려동물 생년월일" },
-        { key: "reg_date", label: "등록일", icon: ClipboardList, description: "디바이스 최초 등록 일시" },
-        { key: "is_use", label: "사용 여부", icon: CheckCircle2, description: "현재 디바이스 활성화 상태" },
+        { key: "regDate", label: "등록일", icon: ClipboardList, description: "디바이스 최초 등록 일시" },
+        { key: "isUse", label: "사용 여부", icon: CheckCircle2, description: "현재 디바이스 활성화 상태" },
     ];
 
 function formatDeviceValue(key: keyof DeviceInfo, value: DeviceInfo[keyof DeviceInfo]): React.ReactNode {
-    if (key === "is_use") {
+    if (key === "isUse") {
         return value ? (
             <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100">
                 <CheckCircle2 className="w-3 h-3 mr-1" /> 사용 중
@@ -181,12 +107,9 @@ function formatDeviceValue(key: keyof DeviceInfo, value: DeviceInfo[keyof Device
             </Badge>
         );
     }
-    if (key === "reg_date") {
+    if (key === "regDate") {
         const d = new Date(value as string);
         return <span className="text-gray-800">{d.toLocaleDateString("ko-KR")} {d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</span>;
-    }
-    if (key === "object_birth") {
-        return <span className="text-gray-800">{new Date(value as string).toLocaleDateString("ko-KR")}</span>;
     }
     if (key === "seq") {
         return <span className="font-mono text-gray-800">#{String(value).padStart(4, "0")}</span>;
@@ -199,12 +122,14 @@ function formatDeviceValue(key: keyof DeviceInfo, value: DeviceInfo[keyof Device
 // ─────────────────────────────────────────────
 
 function MemberTab() {
-    const [member, setMember] = useState<MemberInfo>(MOCK_MEMBER);
-    const [withdrawStatus, setWithdrawStatus] = useState<WithdrawStatus | null>(MOCK_WITHDRAW_STATUS);
+    const { memberId } = useAuthStore();
+    const [member, setMember] = useState<MemberInfo | null>(null);
+    const [withdrawStatus, setWithdrawStatus] = useState<WithdrawStatus | null>(null);
+    const [loading, setLoading] = useState(true);
 
     // Edit state
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [editForm, setEditForm] = useState({ memberName: member.memberName, memberPhone: member.memberPhone });
+    const [editForm, setEditForm] = useState({ memberName: "", memberPhone: "" });
     const [editLoading, setEditLoading] = useState(false);
 
     // Withdraw state
@@ -217,53 +142,122 @@ function MemberTab() {
     const [isCancelOpen, setIsCancelOpen] = useState(false);
     const [cancelLoading, setCancelLoading] = useState(false);
 
+    useEffect(() => {
+        const fetchMemberData = async () => {
+            if (!memberId) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const res = await memberApi.getMemberByMemberId(memberId);
+                const memberInfo: MemberInfo = {
+                    memberId: res.memberId,
+                    memberName: res.memberName,
+                    memberPhone: res.memberPhone,
+                    memberEmail: `${res.memberId}@example.com`,
+                    memberSeq: res.seq,
+                    regDate: res.regDate,
+                    role: res.roleName,
+                };
+                setMember(memberInfo);
+                setEditForm({ memberName: res.memberName, memberPhone: res.memberPhone });
+
+                // Check activation status
+                const statusRes = await memberApi.getAccountStatus(memberId);
+                if (!statusRes.enabled) {
+                    setWithdrawStatus({
+                        withdrawId: res.seq,
+                        memberId: res.memberId,
+                        memberSeq: res.seq,
+                        withdrawDate: res.regDate,
+                        expireDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        isWithdrawn: 1,
+                        withdrawn: true,
+                    });
+                } else {
+                    setWithdrawStatus(null);
+                }
+            } catch (error) {
+                console.error("Failed to fetch member info:", error);
+                toast.error("회원 정보를 불러오지 못했습니다.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchMemberData();
+    }, [memberId]);
+
     // ── Edit Member Info ──────────────────────────────────────
     const handleEditSave = async () => {
+        if (!member) return;
         if (!editForm.memberName.trim()) { toast.error("이름을 입력해주세요"); return; }
         if (!editForm.memberPhone.trim()) { toast.error("전화번호를 입력해주세요"); return; }
         setEditLoading(true);
-        await new Promise((r) => setTimeout(r, 800));
-        // Mock API response: { memberId, memberName, memberPhone }
-        setMember((prev) => ({ ...prev, memberName: editForm.memberName, memberPhone: editForm.memberPhone }));
-        setEditLoading(false);
-        setIsEditOpen(false);
-        toast.success("회원 정보가 수정되었습니다");
+        try {
+            await memberApi.updateMember({
+                seq: member.memberSeq,
+                member_id: member.memberId,
+                member_name: editForm.memberName,
+                member_phone: editForm.memberPhone,
+            });
+            setMember((prev) => prev ? { ...prev, memberName: editForm.memberName, memberPhone: editForm.memberPhone } : null);
+            setIsEditOpen(false);
+            toast.success("회원 정보가 수정되었습니다");
+        } catch (error) {
+            console.error("Failed to update member info:", error);
+            toast.error("회원 정보 수정에 실패했습니다.");
+        } finally {
+            setEditLoading(false);
+        }
     };
 
     // ── Withdraw Apply ───────────────────────────────────────
     const handleWithdraw = async () => {
+        if (!member) return;
         if (!withdrawPassword.trim()) { toast.error("비밀번호를 입력해주세요"); return; }
-        if (withdrawPassword.length < 4) { toast.error("올바른 비밀번호를 입력해주세요"); return; }
         setWithdrawLoading(true);
-        await new Promise((r) => setTimeout(r, 1000));
-        // Mock API response
-        const expireDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-        const now = new Date();
-        const mockWithdrawStatus: WithdrawStatus = {
-            withdrawId: 42,
-            memberId: member.memberId,
-            memberSeq: member.memberSeq,
-            withdrawDate: now.toISOString(),
-            expireDate: expireDate.toISOString(),
-            isWithdrawn: 1,
-            withdrawn: true,
-        };
-        setWithdrawStatus(mockWithdrawStatus);
-        setWithdrawLoading(false);
-        setIsWithdrawOpen(false);
-        setWithdrawPassword("");
-        toast.success("탈퇴 신청이 완료되었습니다. 7일 유예기간이 적용됩니다.");
+        try {
+            await memberApi.deactivateMember(member.memberId, withdrawPassword);
+            const expireDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            const now = new Date();
+            const mockWithdrawStatus: WithdrawStatus = {
+                withdrawId: member.memberSeq,
+                memberId: member.memberId,
+                memberSeq: member.memberSeq,
+                withdrawDate: now.toISOString(),
+                expireDate: expireDate.toISOString(),
+                isWithdrawn: 1,
+                withdrawn: true,
+            };
+            setWithdrawStatus(mockWithdrawStatus);
+            setIsWithdrawOpen(false);
+            setWithdrawPassword("");
+            toast.success("탈퇴 신청이 완료되었습니다. 계정이 비활성화되었습니다.");
+        } catch (error: any) {
+            console.error("Deactivation failed:", error);
+            const errMsg = error?.response?.data?.message || "비밀번호 확인 또는 탈퇴 처리에 실패했습니다.";
+            toast.error(errMsg);
+        } finally {
+            setWithdrawLoading(false);
+        }
     };
 
     // ── Cancel Withdraw ──────────────────────────────────────
     const handleCancelWithdraw = async () => {
+        if (!member) return;
         setCancelLoading(true);
-        await new Promise((r) => setTimeout(r, 800));
-        // Mock API response: { success: true, message: "탈퇴 신청이 취소되었습니다." }
-        setWithdrawStatus(null);
-        setCancelLoading(false);
-        setIsCancelOpen(false);
-        toast.success("탈퇴 신청이 취소되었습니다");
+        try {
+            await memberApi.reactivateMember(member.memberId);
+            setWithdrawStatus(null);
+            setIsCancelOpen(false);
+            toast.success("탈퇴 신청이 취소되었습니다. 계정이 정상 복원되었습니다.");
+        } catch (error) {
+            console.error("Reactivation failed:", error);
+            toast.error("탈퇴 신청 취소에 실패했습니다.");
+        } finally {
+            setCancelLoading(false);
+        }
     };
 
     const formatDate = (iso: string) => {
@@ -274,6 +268,23 @@ function MemberTab() {
     const daysLeft = withdrawStatus
         ? Math.max(0, Math.ceil((new Date(withdrawStatus.expireDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
         : 0;
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
+                <p className="text-sm text-gray-500 font-medium">회원 정보를 불러오는 중입니다...</p>
+            </div>
+        );
+    }
+
+    if (!member) {
+        return (
+            <div className="text-center py-20 text-gray-500 font-medium">
+                로그인 세션이 만료되었거나 회원 정보를 찾을 수 없습니다.
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -691,20 +702,64 @@ function InfoRow({
 // ─────────────────────────────────────────────
 
 function DeviceTab() {
+    const { memberId } = useAuthStore();
+    const [devices, setDevices] = useState<DeviceInfo[]>([]);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [selectedDevice, setSelectedDevice] = useState<DeviceInfo | null>(null);
     const [filterUse, setFilterUse] = useState<"all" | "active" | "inactive">("all");
 
-    const filtered = MOCK_DEVICES.filter((d) => {
+    const fetchDevices = async (showToast = false) => {
+        if (!memberId) {
+            setLoading(false);
+            return;
+        }
+        try {
+            const res = await dashboardApi.getDevices(memberId);
+            const mapped: DeviceInfo[] = res.map((d: any) => ({
+                seq: d.seq,
+                deviceId: d.deviceId,
+                memberId: d.memberId,
+                serialNum: d.serialNum,
+                deviceType: d.deviceType,
+                regDate: d.regDate,
+                isUse: d.isUse,
+            }));
+            setDevices(mapped);
+            if (showToast) {
+                toast.success("디바이스 목록이 갱신되었습니다.");
+            }
+        } catch (error) {
+            console.error("Failed to fetch devices:", error);
+            toast.error("디바이스 목록을 불러오지 못했습니다.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDevices();
+    }, [memberId]);
+
+    const filtered = devices.filter((d) => {
         const matchSearch =
             search === "" ||
             Object.values(d).some((v) => String(v).toLowerCase().includes(search.toLowerCase()));
         const matchFilter =
             filterUse === "all" ||
-            (filterUse === "active" && d.is_use) ||
-            (filterUse === "inactive" && !d.is_use);
+            (filterUse === "active" && d.isUse) ||
+            (filterUse === "inactive" && !d.isUse);
         return matchSearch && matchFilter;
     });
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
+                <p className="text-sm text-gray-500 font-medium">디바이스 정보를 불러오는 중입니다...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -717,7 +772,7 @@ function DeviceTab() {
                                 <Cpu className="w-5 h-5 text-blue-600" />
                             </div>
                             <div>
-                                <div className="text-2xl font-bold text-gray-900">{MOCK_DEVICES.length}</div>
+                                <div className="text-2xl font-bold text-gray-900">{devices.length}</div>
                                 <div className="text-xs text-gray-500">전체 디바이스</div>
                             </div>
                         </div>
@@ -730,7 +785,7 @@ function DeviceTab() {
                                 <CheckCircle2 className="w-5 h-5 text-green-600" />
                             </div>
                             <div>
-                                <div className="text-2xl font-bold text-gray-900">{MOCK_DEVICES.filter((d) => d.is_use).length}</div>
+                                <div className="text-2xl font-bold text-gray-900">{devices.filter((d) => d.isUse).length}</div>
                                 <div className="text-xs text-gray-500">사용 중</div>
                             </div>
                         </div>
@@ -743,7 +798,7 @@ function DeviceTab() {
                                 <XCircle className="w-5 h-5 text-gray-400" />
                             </div>
                             <div>
-                                <div className="text-2xl font-bold text-gray-900">{MOCK_DEVICES.filter((d) => !d.is_use).length}</div>
+                                <div className="text-2xl font-bold text-gray-900">{devices.filter((d) => !d.isUse).length}</div>
                                 <div className="text-xs text-gray-500">미사용</div>
                             </div>
                         </div>
@@ -756,7 +811,7 @@ function DeviceTab() {
                                 <Tag className="w-5 h-5 text-purple-600" />
                             </div>
                             <div>
-                                <div className="text-2xl font-bold text-gray-900">{new Set(MOCK_DEVICES.map((d) => d.deviceType)).size}</div>
+                                <div className="text-2xl font-bold text-gray-900">{new Set(devices.map((d) => d.deviceType)).size}</div>
                                 <div className="text-xs text-gray-500">디바이스 타입</div>
                             </div>
                         </div>
@@ -798,7 +853,7 @@ function DeviceTab() {
                             variant="outline"
                             size="sm"
                             className="h-9 gap-1.5 text-xs"
-                            onClick={() => setSearch("")}
+                            onClick={() => fetchDevices(true)}
                         >
                             <RefreshCw className="w-3.5 h-3.5" />
                             새로고침
@@ -834,13 +889,13 @@ function DeviceTab() {
                                             onClick={() => setSelectedDevice(device)}
                                         >
                                             <td className="px-4 py-3 font-mono text-gray-500 text-xs">#{String(device.seq).padStart(4, "0")}</td>
-                                            <td className="px-4 py-3"><span className="font-mono text-blue-700 font-medium">{device.device_id}</span></td>
-                                            <td className="px-4 py-3"><span className="font-mono text-gray-600">{device.member_id}</span></td>
-                                            <td className="px-4 py-3"><span className="font-mono text-gray-500 text-xs">{device.serial_num}</span></td>
+                                            <td className="px-4 py-3"><span className="font-mono text-blue-700 font-medium">{device.deviceId}</span></td>
+                                            <td className="px-4 py-3"><span className="font-mono text-gray-600">{device.memberId}</span></td>
+                                            <td className="px-4 py-3"><span className="font-mono text-gray-500 text-xs">{device.serialNum}</span></td>
                                             <td className="px-4 py-3"><Badge variant="outline" className="font-mono text-xs">{device.deviceType}</Badge></td>
-                                            <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{new Date(device.reg_date).toLocaleDateString("ko-KR")}</td>
+                                            <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{new Date(device.regDate).toLocaleDateString("ko-KR")}</td>
                                             <td className="px-4 py-3">
-                                                {device.is_use ? (
+                                                {device.isUse ? (
                                                     <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100 text-xs">
                                                         <CheckCircle2 className="w-3 h-3 mr-1" />사용
                                                     </Badge>
@@ -875,20 +930,20 @@ function DeviceTab() {
                                 >
                                     <div className="flex items-start justify-between mb-3">
                                         <div>
-                                            <div className="font-mono font-semibold text-blue-700">{device.device_id}</div>
+                                            <div className="font-mono font-semibold text-blue-700">{device.deviceId}</div>
                                             <div className="text-xs text-gray-400 mt-0.5 font-mono">#{String(device.seq).padStart(4, "0")}</div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            {device.is_use
+                                            {device.isUse
                                                 ? <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100 text-xs">사용</Badge>
                                                 : <Badge variant="secondary" className="text-xs">미사용</Badge>}
                                             <ChevronRight className="w-4 h-4 text-gray-400" />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500">
-                                        <span><span className="text-gray-400">멤버</span> {device.member_id}</span>
+                                        <span><span className="text-gray-400">멤버</span> {device.memberId}</span>
                                         <span><span className="text-gray-400">타입</span> {device.deviceType}</span>
-                                        <span className="col-span-2"><span className="text-gray-400">S/N</span> {device.serial_num}</span>
+                                        <span className="col-span-2"><span className="text-gray-400">S/N</span> {device.serialNum}</span>
                                     </div>
                                 </div>
                             ))
@@ -912,10 +967,10 @@ function DeviceTab() {
                     </DialogHeader>
                     {selectedDevice && (
                         <div className="space-y-3 pt-2">
-                            <div className={`flex items-center gap-2 p-3 rounded-lg border ${selectedDevice.is_use ? "bg-green-50 border-green-200 text-green-700" : "bg-gray-100 border-gray-200 text-gray-500"
+                            <div className={`flex items-center gap-2 p-3 rounded-lg border ${selectedDevice.isUse ? "bg-green-50 border-green-200 text-green-700" : "bg-gray-100 border-gray-200 text-gray-500"
                                 }`}>
-                                {selectedDevice.is_use ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <XCircle className="w-4 h-4 flex-shrink-0" />}
-                                <span className="text-sm font-medium">현재 {selectedDevice.is_use ? "사용 중인" : "미사용"} 디바이스입니다</span>
+                                {selectedDevice.isUse ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <XCircle className="w-4 h-4 flex-shrink-0" />}
+                                <span className="text-sm font-medium">현재 {selectedDevice.isUse ? "사용 중인" : "미사용"} 디바이스입니다</span>
                             </div>
                             <div className="rounded-xl border border-gray-200 overflow-hidden">
                                 {FIELD_META.map((meta, idx) => {

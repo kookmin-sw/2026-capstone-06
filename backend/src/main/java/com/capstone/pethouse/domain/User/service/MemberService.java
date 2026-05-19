@@ -144,4 +144,36 @@ public class MemberService {
         user.updatePassword(passwordEncoder.encode(request.newPassword()));
         return true;
     }
+
+    /** 탈퇴 신청 (계정 비활성화 - soft disable) */
+    @Transactional
+    public MemberSimpleResponse deactivateMember(String memberId, String memberPw) {
+        User user = userRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        if (!passwordEncoder.matches(memberPw, user.getMemberPw())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+
+        user.deactivate();
+        return MemberSimpleResponse.from(user);
+    }
+
+    /** 탈퇴 취소 (계정 재활성화) */
+    @Transactional
+    public MemberSimpleResponse reactivateMember(String memberId) {
+        User user = userRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        user.reactivate();
+        return MemberSimpleResponse.from(user);
+    }
+
+    /** 계정 활성화 상태 조회 */
+    @Transactional(readOnly = true)
+    public boolean getAccountStatus(String memberId) {
+        User user = userRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+        return user.isEnabled();
+    }
 }
