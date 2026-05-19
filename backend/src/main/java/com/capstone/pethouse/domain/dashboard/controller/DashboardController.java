@@ -64,4 +64,14 @@ public class DashboardController {
     public ResponseEntity<DashboardInitResponse> getDashboardInit(@RequestParam String memberId) {
         return ResponseEntity.ok(dashboardService.getDashboardInit(memberId));
     }
+
+    @GetMapping("/activities")
+    public ResponseEntity<List<ActivityResponse>> getActivities(@RequestParam String deviceId) {
+        return ResponseEntity.ok(dashboardService.getActivities(deviceId));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<DailyStatsResponse> getDailyStats(@RequestParam String deviceId) {
+        return ResponseEntity.ok(dashboardService.getDailyStats(deviceId));
+    }
 }

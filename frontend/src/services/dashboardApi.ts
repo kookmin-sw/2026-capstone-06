@@ -1,5 +1,5 @@
 import apiClient from './axios';
-import type { SensorDataRes, DashboardInitRes } from '../types/api';
+import type { SensorDataRes, DashboardInitRes, ActivityRes, DailyStatsRes } from '../types/api';
 
 /**
  * 대시보드 관련 API
@@ -26,6 +26,22 @@ export const getDashboardInit = async (memberId: string): Promise<DashboardInitR
 export const getDevices = async (memberId: string): Promise<any[]> => {
   const { data } = await apiClient.get<any[]>('/dashboard/devices', {
     params: { memberId },
+  });
+  return data;
+};
+
+/** 대시보드 최근 활동 타임라인 조회 */
+export const getDashboardActivities = async (deviceId: string): Promise<ActivityRes[]> => {
+  const { data } = await apiClient.get<ActivityRes[]>('/dashboard/activities', {
+    params: { deviceId },
+  });
+  return data;
+};
+
+/** 대시보드 당일 활동 요약 통계 조회 */
+export const getDashboardStats = async (deviceId: string): Promise<DailyStatsRes> => {
+  const { data } = await apiClient.get<DailyStatsRes>('/dashboard/stats', {
+    params: { deviceId },
   });
   return data;
 };

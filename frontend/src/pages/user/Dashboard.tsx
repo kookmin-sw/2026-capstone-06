@@ -16,8 +16,9 @@ import {
   Send
 } from "lucide-react";
 import { toast } from "sonner";
-import { getLatestSensorData } from "../../services/dashboardApi";
+import { getLatestSensorData, getDashboardActivities, getDashboardStats } from "../../services/dashboardApi";
 import { usePetHouse } from "../../store/petStore";
+import type { ActivityRes, DailyStatsRes } from "../../types/api";
 
 export function Dashboard() {
   const { activeHouse } = usePetHouse();
@@ -31,6 +32,8 @@ export function Dashboard() {
 
   const [cctvConnected] = useState(true);
   const [sendingVoice, setSendingVoice] = useState(false);
+  const [stats, setStats] = useState<DailyStatsRes | null>(null);
+  const [activities, setActivities] = useState<ActivityRes[]>([]);
 
   useEffect(() => {
     const fetchSensorData = async () => {
@@ -48,9 +51,26 @@ export function Dashboard() {
       }
     };
 
-    fetchSensorData();
+    const fetchExtraData = async () => {
+      try {
+        const [activitiesData, statsData] = await Promise.all([
+          getDashboardActivities(activeHouse.id),
+          getDashboardStats(activeHouse.id)
+        ]);
+        setActivities(activitiesData);
+        setStats(statsData);
+      } catch (error) {
+        console.error('[Dashboard] Extra API Fetch Error:', error);
+      }
+    };
 
-    const interval = setInterval(fetchSensorData, 3000);
+    fetchSensorData();
+    fetchExtraData();
+
+    const interval = setInterval(() => {
+      fetchSensorData();
+      fetchExtraData();
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [activeHouse.id]);
@@ -226,20 +246,16 @@ export function Dashboard() {
               <div className="text-sm text-gray-600 mb-2">오늘 활동 요약</div>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">���식 횟수</span>
-                  <span className="font-semibold">2회</span>
+                  <span className="text-gray-600">급식 횟수</span>
+                  <span className="font-semibold">{stats ? `${stats.foodSupplyCount}회 (${stats.foodSupplyAmount}g)` : '0회 (0g)'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">급수 횟수</span>
-                  <span className="font-semibold">3회</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">짖음 감지</span>
-                  <span className="font-semibold text-orange-600">5회</span>
+                  <span className="font-semibold">{stats ? `${stats.waterSupplyCount}회 (${stats.waterSupplyAmount}ml)` : '0회 (0ml)'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">환풍 작동</span>
-                  <span className="font-semibold">4회</span>
+                  <span className="font-semibold">{stats ? `${stats.fanRunCount}회` : '0회'}</span>
                 </div>
               </div>
             </div>
@@ -335,30 +351,29 @@ export function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[
-              { time: "14:23", event: "급수 완료", detail: "200ml 공급됨", type: "success" },
-              { time: "13:45", event: "짖음 감지", detail: "3회 연속", type: "warning" },
-              { time: "12:00", event: "급식 완료", detail: "100g 공급됨", type: "success" },
-              { time: "11:30", event: "환풍 작동", detail: "10분간 가동", type: "info" },
-              { time: "10:15", event: "CO₂ 농도 상승", detail: "580ppm 도달", type: "warning" },
-            ].map((activity, index) => (
-              <div key={index} className="flex items-start gap-4 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                <div className="text-sm font-medium text-gray-500 w-12">{activity.time}</div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{activity.event}</span>
-                    <Badge variant={
-                      activity.type === 'success' ? 'default' :
-                      activity.type === 'warning' ? 'destructive' : 'secondary'
-                    } className="text-xs">
-                      {activity.type === 'success' ? '완료' :
-                       activity.type === 'warning' ? '주의' : '정보'}
-                    </Badge>
+            {activities.length > 0 ? (
+              activities.map((activity, index) => {
+                const date = new Date(activity.timestamp);
+                const timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                const isFan = activity.type === 'FAN';
+                
+                return (
+                  <div key={index} className="flex items-start gap-4 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                    <div className="text-sm font-medium text-gray-500 w-12">{timeStr}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">{activity.message}</span>
+                        <Badge variant={isFan ? 'secondary' : 'default'} className="text-xs">
+                          {isFan ? '정보' : '완료'}
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">{activity.detail}</p>
-                </div>
-              </div>
-            ))}
+                );
+              })
+            ) : (
+              <div className="text-center py-6 text-gray-400">최근 활동 내역이 없습니다.</div>
+            )}
           </div>
         </CardContent>
       </Card>

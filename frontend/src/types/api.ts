@@ -48,6 +48,20 @@ export interface DashboardInitRes {
   latestData: SensorDataRes;
 }
 
+export interface ActivityRes {
+  type: 'FAN' | 'FOOD' | 'WATER';
+  message: string;
+  timestamp: string;
+}
+
+export interface DailyStatsRes {
+  fanRunCount: number;
+  waterSupplyCount: number;
+  waterSupplyAmount: number;
+  foodSupplyCount: number;
+  foodSupplyAmount: number;
+}
+
 // ── Hospital ────────────────────────────────────────────────────────
 
 export interface HospitalListResponse {

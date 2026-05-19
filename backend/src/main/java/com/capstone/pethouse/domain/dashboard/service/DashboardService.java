@@ -12,11 +12,24 @@ import com.capstone.pethouse.domain.device.entity.PetHouse;
 import com.capstone.pethouse.domain.device.repository.PetHouseRepository;
 import com.capstone.pethouse.domain.serial.entity.Serial;
 import com.capstone.pethouse.domain.serial.repository.SerialRepository;
+import com.capstone.pethouse.domain.fan.repository.FanLogRepository;
+import com.capstone.pethouse.domain.supply.repository.SupplyLogRepository;
+import com.capstone.pethouse.domain.fan.entity.FanLog;
+import com.capstone.pethouse.domain.supply.entity.SupplyLog;
+import com.capstone.pethouse.domain.enums.FeedType;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -31,6 +44,8 @@ public class DashboardService {
     private final DashboardSensorRepository sensorRepository;
     private final UserRepository userRepository;
     private final PetHouseRepository petHouseRepository;
+    private final FanLogRepository fanLogRepository;
+    private final SupplyLogRepository supplyLogRepository;
 
     @Transactional(readOnly = true)
     public SensorDataResponse getLatestSensorData(String deviceId) {
@@ -160,5 +175,77 @@ public class DashboardService {
 
     private void markSerialAsUnused(String serialNum) {
         serialRepository.findBySerialNum(serialNum).ifPresent(Serial::markUnused);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ActivityResponse> getActivities(String deviceId) {
+        Device device = deviceRepository.findByDeviceId(deviceId)
+                .orElseThrow(() -> new IllegalArgumentException("장치를 찾을 수 없습니다."));
+        Long houseId = device.getPetHouse().getHouseId();
+
+        int size = 20;
+        List<FanLog> fanLogs = fanLogRepository.findByPetHouse_HouseId(houseId, PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "createdAt"))).getContent();
+        List<SupplyLog> supplyLogs = supplyLogRepository.findByPetHouse_HouseId(houseId, PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "createdAt"))).getContent();
+
+        List<ActivityResponse> activities = new ArrayList<>();
+
+        for (FanLog fanLog : fanLogs) {
+            String message = String.format("%02d:%02d 환풍기 작동 완료", fanLog.getCreatedAt().getHour(), fanLog.getCreatedAt().getMinute());
+            activities.add(ActivityResponse.builder()
+                    .type("FAN")
+                    .message(message)
+                    .timestamp(fanLog.getCreatedAt())
+                    .build());
+        }
+
+        for (SupplyLog supplyLog : supplyLogs) {
+            String typeStr = supplyLog.getFeedType() == FeedType.FOOD ? "급식" : "급수";
+            String message = String.format("%02d:%02d %s 완료", supplyLog.getCreatedAt().getHour(), supplyLog.getCreatedAt().getMinute(), typeStr);
+            activities.add(ActivityResponse.builder()
+                    .type(supplyLog.getFeedType().name())
+                    .message(message)
+                    .timestamp(supplyLog.getCreatedAt())
+                    .build());
+        }
+
+        return activities.stream()
+                .sorted(Comparator.comparing(ActivityResponse::getTimestamp).reversed())
+                .limit(size)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public DailyStatsResponse getDailyStats(String deviceId) {
+        Device device = deviceRepository.findByDeviceId(deviceId)
+                .orElseThrow(() -> new IllegalArgumentException("장치를 찾을 수 없습니다."));
+        Long houseId = device.getPetHouse().getHouseId();
+
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
+
+        List<FanLog> fanLogs = fanLogRepository.findByPetHouse_HouseIdAndCreatedAtBetween(houseId, startOfDay, endOfDay);
+        List<SupplyLog> supplyLogs = supplyLogRepository.findByPetHouse_HouseIdAndCreatedAtBetween(houseId, startOfDay, endOfDay);
+
+        long fanRunCount = fanLogs.size();
+
+        long waterSupplyCount = supplyLogs.stream().filter(log -> log.getFeedType() == FeedType.WATER).count();
+        BigDecimal waterSupplyAmount = supplyLogs.stream()
+                .filter(log -> log.getFeedType() == FeedType.WATER)
+                .map(SupplyLog::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long foodSupplyCount = supplyLogs.stream().filter(log -> log.getFeedType() == FeedType.FOOD).count();
+        BigDecimal foodSupplyAmount = supplyLogs.stream()
+                .filter(log -> log.getFeedType() == FeedType.FOOD)
+                .map(SupplyLog::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return DailyStatsResponse.builder()
+                .fanRunCount(fanRunCount)
+                .waterSupplyCount(waterSupplyCount)
+                .waterSupplyAmount(waterSupplyAmount)
+                .foodSupplyCount(foodSupplyCount)
+                .foodSupplyAmount(foodSupplyAmount)
+                .build();
     }
 }
