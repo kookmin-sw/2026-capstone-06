@@ -41,6 +41,7 @@ export function Dashboard() {
           co2: data.co2 ?? prev.co2,
           temperature: data.temperature ?? prev.temperature,
           humidity: data.humidity ?? prev.humidity,
+          petPresent: data.heartRate !== null && data.heartRate !== undefined ? data.heartRate > 0 : prev.petPresent,
         }));
       } catch (error) {
         console.error('[Dashboard] API Fetch Error:', error);

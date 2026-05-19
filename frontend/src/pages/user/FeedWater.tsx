@@ -76,21 +76,23 @@ export function FeedWater() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [history, setHistory] = useState<History[]>([]);
   
+  const fetchData = async () => {
+    if (!activeHouse?.id) return;
+    try {
+      const [schedulePage, historyPage] = await Promise.all([
+        supplyApi.getSupplySchedules(activeHouse.id),
+        supplyApi.getSupplyHistory(activeHouse.id),
+      ]);
+      setSchedules(schedulePage.content.map(toSchedule));
+      setHistory(historyPage.content.map(toHistory));
+    } catch (error) {
+      console.error('[FeedWater] API Fetch Error:', error);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [schedulePage, historyPage] = await Promise.all([
-          supplyApi.getSupplySchedules(activeHouse.id),
-          supplyApi.getSupplyHistory(activeHouse.id),
-        ]);
-        setSchedules(schedulePage.content.map(toSchedule));
-        setHistory(historyPage.content.map(toHistory));
-      } catch (error) {
-        console.error('[FeedWater] API Fetch Error:', error);
-      }
-    };
     fetchData();
-  }, [activeHouse.id]);
+  }, [activeHouse?.id]);
 
   const [newSchedule, setNewSchedule] = useState({
     type: 'feed' as 'feed' | 'water',
@@ -101,27 +103,69 @@ export function FeedWater() {
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const handleManualFeed = (amount: number) => {
-    toast.success(`사료 ${amount}g이 공급되었습니다`);
+  const handleManualFeed = async (amount: number) => {
+    if (!activeHouse?.id) return;
+    try {
+      await supplyApi.recordSupplyLog(activeHouse.id, {
+        scheduleId: null,
+        feedType: 'FOOD',
+        unitType: 'GRAM',
+        amount: amount,
+        triggerType: 'MANUAL'
+      });
+      toast.success(`사료 ${amount}g이 공급되었습니다`);
+      fetchData();
+    } catch (error) {
+      toast.error("사료 공급에 실패했습니다");
+    }
   };
 
-  const handleManualWater = (amount: number) => {
-    toast.success(`물 ${amount}ml가 공급되었습니다`);
+  const handleManualWater = async (amount: number) => {
+    if (!activeHouse?.id) return;
+    try {
+      await supplyApi.recordSupplyLog(activeHouse.id, {
+        scheduleId: null,
+        feedType: 'WATER',
+        unitType: 'ML',
+        amount: amount,
+        triggerType: 'MANUAL'
+      });
+      toast.success(`물 ${amount}ml가 공급되었습니다`);
+      fetchData();
+    } catch (error) {
+      toast.error("물 공급에 실패했습니다");
+    }
   };
 
-  const handleAddSchedule = () => {
-    const schedule: Schedule = {
-      id: Date.now().toString(),
-      ...newSchedule,
-      enabled: true,
-    };
-    setSchedules([...schedules, schedule]);
-    toast.success("스케줄이 추가되었습니다");
+  const handleAddSchedule = async () => {
+    if (!activeHouse?.id) return;
+    try {
+      const [hours, minutes] = newSchedule.time.split(':');
+      const cronExpression = `0 ${minutes} ${hours} * * ?`;
+      
+      await supplyApi.createSupplySchedule(activeHouse.id, {
+        feedType: newSchedule.type === 'feed' ? 'FOOD' : 'WATER',
+        unitType: newSchedule.type === 'feed' ? 'GRAM' : 'ML',
+        amount: newSchedule.amount,
+        cronExpression,
+        enabled: true,
+      });
+      toast.success("스케줄이 추가되었습니다");
+      fetchData();
+    } catch (error) {
+      toast.error("스케줄 추가 실패");
+    }
   };
 
-  const handleDeleteSchedule = (id: string) => {
-    setSchedules(schedules.filter(s => s.id !== id));
-    toast.success("스케줄이 삭제되었습니다");
+  const handleDeleteSchedule = async (id: string) => {
+    if (!activeHouse?.id) return;
+    try {
+      await supplyApi.deleteSupplySchedule(activeHouse.id, Number(id));
+      toast.success("스케줄이 삭제되었습니다");
+      fetchData();
+    } catch (error) {
+      toast.error("스케줄 삭제 실패");
+    }
   };
 
   const handleEditSchedule = (schedule: Schedule) => {
@@ -129,18 +173,38 @@ export function FeedWater() {
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveEditSchedule = () => {
-    if (!editingSchedule) return;
-    setSchedules(schedules.map(s => s.id === editingSchedule.id ? editingSchedule : s));
-    setIsEditDialogOpen(false);
-    setEditingSchedule(null);
-    toast.success("스케줄이 수정되었습니다");
+  const handleSaveEditSchedule = async () => {
+    if (!editingSchedule || !activeHouse?.id) return;
+    try {
+      const [hours, minutes] = editingSchedule.time.split(':');
+      const cronExpression = `0 ${minutes} ${hours} * * ?`;
+      
+      await supplyApi.updateSupplySchedule(activeHouse.id, Number(editingSchedule.id), {
+        feedType: editingSchedule.type === 'feed' ? 'FOOD' : 'WATER',
+        unitType: editingSchedule.type === 'feed' ? 'GRAM' : 'ML',
+        amount: editingSchedule.amount,
+        cronExpression,
+        enabled: editingSchedule.enabled,
+      });
+      setIsEditDialogOpen(false);
+      setEditingSchedule(null);
+      toast.success("스케줄이 수정되었습니다");
+      fetchData();
+    } catch (error) {
+      toast.error("스케줄 수정 실패");
+    }
   };
 
-  const handleToggleSchedule = (id: string) => {
-    setSchedules(schedules.map(s => 
-      s.id === id ? { ...s, enabled: !s.enabled } : s
-    ));
+  const handleToggleSchedule = async (id: string) => {
+    if (!activeHouse?.id) return;
+    try {
+      const target = schedules.find(s => s.id === id);
+      if (!target) return;
+      await supplyApi.toggleSupplySchedule(activeHouse.id, Number(id), !target.enabled);
+      fetchData();
+    } catch (error) {
+      toast.error("스케줄 상태 변경 실패");
+    }
   };
 
   const formatDateTime = (timestamp: string) => {
