@@ -16,7 +16,7 @@ interface Props {
   onReload?: () => void;
 }
 
-export function SerialManager({ serials, setSerials, onReload }: Props) {
+export function SerialManager({ serials, onReload }: Props) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Serial | null>(null);

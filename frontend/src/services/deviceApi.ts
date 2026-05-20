@@ -36,6 +36,7 @@ export const createDevice = async (req: {
   objectName?: string;
   objectBirth?: string;
   objectCode?: string;
+  nickname?: string;
 }): Promise<DeviceDto> => {
   const { data } = await apiClient.post<DeviceDto>('/device', {
     device_id: req.deviceId,
@@ -45,6 +46,7 @@ export const createDevice = async (req: {
     object_name: req.objectName,
     object_birth: req.objectBirth,
     object_code: req.objectCode,
+    nickname: req.nickname,
   });
   return data;
 };

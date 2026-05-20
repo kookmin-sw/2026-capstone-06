@@ -3,7 +3,6 @@ import { Outlet, Link, useLocation } from "react-router";
 import {
   Home,
   BarChart3,
-  Volume2,
   Utensils,
   Wind,
   Dog,
@@ -23,12 +22,19 @@ import {
 import { usePetHouse, type PetHouse, COLOR_MAP, PET_EMOJI } from "../store/petStore";
 import { useAuthStore } from "../store/authStore";
 import { toast } from "sonner";
+import { checkSerial, createDevice } from "../services/deviceApi";
+import { Sparkles, Key, Calendar, AlertCircle, Loader2, LogOut } from "lucide-react";
 
 const PET_TYPE_LABEL: Record<string, string> = {
   dog: "강아지",
   cat: "고양이",
   other: "기타",
 };
+
+function hasPetName(petName: string) {
+  const trimmed = petName?.trim();
+  return Boolean(trimmed && trimmed !== "-");
+}
 
 const COLOR_OPTIONS = ["blue", "purple", "green", "orange", "pink", "teal", "indigo", "rose"];
 
@@ -162,22 +168,335 @@ const PAGE_TITLES: Record<string, string> = {
   "/user/settings": "설정",
 };
 
+function DeviceRegistrationScreen() {
+  const { memberId, logout } = useAuthStore();
+  const { loadDevicesFromServer } = usePetHouse();
+  
+  const [form, setForm] = useState({
+    nickname: "",
+    serialNum: "",
+    objectName: "",
+    objectCode: "DOG",
+    objectBirth: "",
+  });
+
+  const [serialChecked, setSerialChecked] = useState<"none" | "checking" | "valid" | "in_use" | "not_exist">("none");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleVerifySerial = async () => {
+    if (!form.serialNum.trim()) {
+      toast.error("시리얼 번호를 입력해주세요.");
+      return;
+    }
+    
+    setSerialChecked("checking");
+    try {
+      const status = await checkSerial(form.serialNum.trim());
+      if (status === "ok") {
+        setSerialChecked("valid");
+        toast.success("사용 가능한 시리얼 번호입니다!");
+      } else if (status === "in_use") {
+        setSerialChecked("in_use");
+        toast.warning("이미 사용 중인 시리얼 번호입니다.");
+      } else {
+        setSerialChecked("not_exist");
+        toast.error("존재하지 않는 시리얼 번호입니다. 관리자 페이지에서 발급된 번호인지 확인해 주세요.");
+      }
+    } catch (err) {
+      console.error(err);
+      setSerialChecked("none");
+      toast.error("시리얼 확인 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.nickname.trim()) {
+      toast.error("하우스 이름을 입력해주세요.");
+      return;
+    }
+    if (serialChecked !== "valid") {
+      toast.error("시리얼 번호 중복 확인을 완료해주세요.");
+      return;
+    }
+    if (!form.objectName.trim()) {
+      toast.error("반려동물 이름을 입력해주세요.");
+      return;
+    }
+    if (!form.objectBirth) {
+      toast.error("반려동물 생일을 선택해주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // deviceId는 시리얼 번호 기반으로 충돌 방지를 위해 생성합니다
+      const deviceId = "DEV-" + form.serialNum.trim();
+      
+      await createDevice({
+        deviceId,
+        memberId: memberId || "",
+        serialNum: form.serialNum.trim(),
+        deviceType: "HOUSE",
+        objectName: form.objectName.trim(),
+        objectBirth: form.objectBirth,
+        objectCode: form.objectCode,
+        nickname: form.nickname.trim(),
+      });
+
+      toast.success("기기가 정상적으로 등록되었습니다!");
+      
+      if (memberId) {
+        await loadDevicesFromServer(memberId);
+      }
+    } catch (err: any) {
+      console.error(err);
+      const errMsg = err?.response?.data?.message || "기기 등록에 실패했습니다. 다시 시도해주세요.";
+      toast.error(errMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-tr from-slate-100 via-slate-50 to-blue-50/30 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 relative overflow-hidden">
+      {/* Background blobs */}
+      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-200/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-purple-200/20 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Top Header */}
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-3 z-10">
+        <span className="text-sm font-semibold text-slate-500">{memberId} 님</span>
+        <button
+          onClick={() => {
+            logout();
+            toast.success("로그아웃 되었습니다.");
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold shadow-sm transition-all"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          로그아웃
+        </button>
+      </div>
+
+      {/* Main Container */}
+      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-100 flex flex-col lg:flex-row overflow-hidden min-h-[600px] relative z-0">
+        {/* Left Side: Graphic Intro Panel */}
+        <div className="lg:w-2/5 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-8 sm:p-12 flex flex-col justify-between text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
+          
+          <div className="relative z-10 space-y-6">
+            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md">
+              <Dog className="w-6 h-6 text-indigo-400" />
+            </div>
+            <div>
+              <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase">IoT Pet House</span>
+              <h2 className="text-3xl font-extrabold tracking-tight mt-1 leading-tight">
+                첫 펫하우스를<br />등록해 주세요!
+              </h2>
+            </div>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              발급 받으신 시리얼 번호를 이용해 첫 기기를 등록하면, 반려동물의 실시간 상태 모니터링 및 급여, 환풍 제어를 바로 이용할 수 있습니다.
+            </p>
+          </div>
+
+          <div className="relative z-10 mt-8 space-y-4">
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400">
+                <Check className="w-4 h-4" />
+              </div>
+              <div className="text-xs">
+                <div className="font-bold text-white">시리얼 번호 필수</div>
+                <div className="text-slate-400">관리자 페이지에서 생성된 번호가 필요합니다.</div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div className="text-xs">
+                <div className="font-bold text-white">반려동물 건강 관리</div>
+                <div className="text-slate-400">기기가 연동되면 통계 분석이 실시간 제공됩니다.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Wizard Form Panel */}
+        <form onSubmit={handleSubmit} className="lg:w-3/5 p-8 sm:p-12 flex flex-col justify-between bg-white">
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-xl font-bold text-slate-800">펫하우스 및 반려동물 정보 입력</h3>
+              <p className="text-slate-400 text-xs mt-1 font-medium">아래의 필수 정보를 정확하게 기입해 주세요.</p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Pet House Nickname */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">펫하우스 이름</label>
+                <input
+                  type="text"
+                  placeholder="예: 거실 펫하우스, 초코의 보금자리"
+                  value={form.nickname}
+                  onChange={(e) => setForm({ ...form, nickname: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-300 font-semibold"
+                  required
+                />
+              </div>
+
+              {/* Serial Number Field */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">시리얼 번호 (Serial Number)</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="예: 20251013-DEV-001"
+                      value={form.serialNum}
+                      onChange={(e) => {
+                        setForm({ ...form, serialNum: e.target.value });
+                        setSerialChecked("none"); // Reset check state on change
+                      }}
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-300 font-semibold font-mono"
+                      required
+                    />
+                    <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleVerifySerial}
+                    disabled={serialChecked === "checking" || !form.serialNum.trim()}
+                    className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 disabled:bg-slate-100 disabled:text-slate-300 transition-all shadow-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                  >
+                    {serialChecked === "checking" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    중복 확인
+                  </button>
+                </div>
+
+                {/* Validation Status Indicator */}
+                {serialChecked !== "none" && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold">
+                    {serialChecked === "checking" && (
+                      <span className="text-slate-400 flex items-center gap-1">
+                        <Loader2 className="w-3 h-3 animate-spin" /> 시리얼 번호를 확인하고 있습니다...
+                      </span>
+                    )}
+                    {serialChecked === "valid" && (
+                      <span className="text-emerald-600 flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5 text-emerald-500" /> 사용 가능한 시리얼 번호입니다! 등록을 진행할 수 있습니다.
+                      </span>
+                    )}
+                    {serialChecked === "in_use" && (
+                      <span className="text-amber-600 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-500" /> 이미 사용 중인 시리얼 번호입니다. 다른 번호를 사용해 주세요.
+                      </span>
+                    )}
+                    {serialChecked === "not_exist" && (
+                      <span className="text-rose-600 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-500" /> 존재하지 않는 시리얼 번호입니다. 번호를 다시 확인해 주세요.
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Pet Info Block */}
+              <div className="border-t border-slate-100 my-4 pt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Pet Name */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">반려동물 이름</label>
+                    <input
+                      type="text"
+                      placeholder="예: 초코, 나비"
+                      value={form.objectName}
+                      onChange={(e) => setForm({ ...form, objectName: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-300 font-semibold"
+                      required
+                    />
+                  </div>
+
+                  {/* Pet Birthdate */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">반려동물 생일</label>
+                    <div className="relative">
+                      <input
+                        type="date"
+                        value={form.objectBirth}
+                        onChange={(e) => setForm({ ...form, objectBirth: e.target.value })}
+                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-700 font-semibold"
+                        required
+                      />
+                      <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pet Type Select Button Group */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-2">반려동물 종류</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { code: "DOG", emoji: "🐶", label: "강아지" },
+                      { code: "CAT", emoji: "🐱", label: "고양이" },
+                      { code: "RABBIT", emoji: "🐰", label: "토끼" },
+                      { code: "HAMSTER", emoji: "🐹", label: "햄스터" },
+                    ].map((pet) => (
+                      <button
+                        key={pet.code}
+                        type="button"
+                        onClick={() => setForm({ ...form, objectCode: pet.code })}
+                        className={`py-3 rounded-2xl border text-sm font-semibold flex flex-col items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer ${
+                          form.objectCode === pet.code
+                            ? "bg-indigo-50 border-indigo-300 text-indigo-700 ring-2 ring-indigo-500/10 animate-pulse"
+                            : "bg-white border-slate-200 hover:bg-slate-50 text-slate-600"
+                        }`}
+                      >
+                        <span className="text-xl">{pet.emoji}</span>
+                        <span className="text-xs">{pet.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="mt-8 pt-4 border-t border-slate-100 flex gap-3">
+            <button
+              type="submit"
+              disabled={isSubmitting || serialChecked !== "valid"}
+              className="flex-1 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 disabled:bg-slate-100 disabled:from-slate-100 disabled:to-slate-100 disabled:text-slate-300 disabled:shadow-none transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              등록 완료 및 대시보드 진입
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export function Layout() {
   const location = useLocation();
   const { memberId } = useAuthStore();
   const { houses, activeHouse, setActiveHouse, removeHouse, isLoaded, loadDevicesFromServer } = usePetHouse();
 
-  useEffect(() => {
-    if (!isLoaded && memberId) {
-      loadDevicesFromServer(memberId);
-    }
-  }, [isLoaded, memberId, loadDevicesFromServer]);
   // Desktop: sidebar open/collapsed, Mobile: overlay open/closed
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const isResizing = useRef(false);
+
+  useEffect(() => {
+    if (!isLoaded && memberId) {
+      loadDevicesFromServer(memberId);
+    }
+  }, [isLoaded, memberId, loadDevicesFromServer]);
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -204,10 +523,23 @@ export function Layout() {
     window.addEventListener("mouseup", onMouseUp);
   }, []);
 
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
+        <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
+        <p className="text-sm font-semibold text-slate-500">기기 정보를 불러오는 중입니다...</p>
+      </div>
+    );
+  }
+
+  if (houses.length === 0) {
+    return <DeviceRegistrationScreen />;
+  }
+
   const handleSelectHouse = (house: PetHouse) => {
     setActiveHouse(house);
     setMobileSidebarOpen(false);
-    toast.success(`${house.petName}의 하우스로 전환했습니다`);
+    toast.success(`${house.name}(으)로 전환했습니다`);
   };
 
   const handleRemoveHouse = (e: React.MouseEvent, id: string) => {
@@ -260,9 +592,11 @@ export function Layout() {
                 <span className="text-lg flex-shrink-0">{PET_EMOJI[house.petType]}</span>
                 <div className="flex-1 min-w-0">
                   <div className={`text-sm font-semibold truncate leading-tight ${isActive ? c.text : "text-gray-800"}`}>
-                    {house.petName}
+                    {house.name}
                   </div>
-                  <div className="text-xs text-gray-400 truncate leading-tight">{house.name}</div>
+                  {hasPetName(house.petName) && (
+                    <div className="text-xs text-gray-400 truncate leading-tight">{house.petName}</div>
+                  )}
                 </div>
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${house.online ? "bg-green-400" : "bg-gray-300"}`} />
                 {houses.length > 1 && (
@@ -317,9 +651,11 @@ export function Layout() {
           <div className="flex items-center gap-2">
             <span className="text-lg">{PET_EMOJI[activeHouse.petType]}</span>
             <div className="flex-1 min-w-0">
-              <div className={`text-sm font-semibold truncate ${activeColors.text}`}>{activeHouse.petName}</div>
+              <div className={`text-sm font-semibold truncate ${activeColors.text}`}>{activeHouse.name}</div>
               <div className="text-xs text-gray-500 truncate">
-                {activeHouse.location && `${activeHouse.location} · `}{PET_TYPE_LABEL[activeHouse.petType]}
+                {hasPetName(activeHouse.petName)
+                  ? `${activeHouse.petName} · ${PET_TYPE_LABEL[activeHouse.petType]}`
+                  : PET_TYPE_LABEL[activeHouse.petType]}
               </div>
             </div>
             <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
@@ -377,8 +713,10 @@ export function Layout() {
           {!desktopSidebarOpen && (
             <div className={`hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm ${activeColors.light} ${activeColors.border}`}>
               <span className="text-base leading-none">{PET_EMOJI[activeHouse.petType]}</span>
-              <span className={`font-semibold ${activeColors.text}`}>{activeHouse.petName}</span>
-              <span className="text-gray-400 text-xs">{activeHouse.name}</span>
+              <span className={`font-semibold ${activeColors.text}`}>{activeHouse.name}</span>
+              {hasPetName(activeHouse.petName) && (
+                <span className="text-gray-400 text-xs">{activeHouse.petName}</span>
+              )}
               <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${activeHouse.online ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
             </div>
           )}
@@ -462,7 +800,7 @@ export function Layout() {
           {/* Sub-header: breadcrumb + page title */}
           <div className="bg-white border-b border-gray-100 flex-shrink-0">
             <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 h-11 flex items-center gap-2">
-              <span className="text-gray-400 text-sm hidden sm:inline">{activeHouse.petName}의 하우스</span>
+              <span className="text-gray-400 text-sm hidden sm:inline">{activeHouse.name}</span>
               <ChevronRight className="w-3.5 h-3.5 text-gray-300 hidden sm:inline" />
               <span className="font-semibold text-gray-800 text-sm">{pageTitle}</span>
             </div>

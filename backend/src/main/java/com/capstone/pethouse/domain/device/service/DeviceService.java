@@ -64,18 +64,22 @@ public class DeviceService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
         Device device = Device.of(request.deviceId(), user, request.serialNum(), request.deviceType());
-        Device savedDevice = deviceRepository.save(device);
-        serial.markUsed();
 
         // 펫 정보가 있으면 PetHouse 생성 후 연결
         if (hasPetInfo(request)) {
             Code objectCode = resolveObjectCode(request.objectCode());
             LocalDate objectBirth = parseBirth(request.objectBirth());
-            PetHouse petHouse = PetHouse.createDefault(user, request.deviceId(), objectCode,
+            String houseNickname = (request.nickname() != null && !request.nickname().isBlank()) 
+                    ? request.nickname() 
+                    : request.deviceId();
+            PetHouse petHouse = PetHouse.createDefault(user, houseNickname, objectCode,
                     request.objectName(), objectBirth);
             PetHouse savedPetHouse = petHouseRepository.save(petHouse);
-            savedDevice.assignToPetHouse(savedPetHouse);
+            device.assignToPetHouse(savedPetHouse);
         }
+
+        Device savedDevice = deviceRepository.save(device);
+        serial.markUsed();
 
         return DeviceResponse.from(savedDevice);
     }
@@ -122,7 +126,10 @@ public class DeviceService {
             if (device.getPetHouse() != null) {
                 device.getPetHouse().updatePetInfo(objectCode, request.objectName(), objectBirth);
             } else {
-                PetHouse petHouse = PetHouse.createDefault(user, device.getDeviceId(), objectCode,
+                String houseNickname = (request.nickname() != null && !request.nickname().isBlank()) 
+                        ? request.nickname() 
+                        : device.getDeviceId();
+                PetHouse petHouse = PetHouse.createDefault(user, houseNickname, objectCode,
                         request.objectName(), objectBirth);
                 PetHouse savedPetHouse = petHouseRepository.save(petHouse);
                 device.assignToPetHouse(savedPetHouse);

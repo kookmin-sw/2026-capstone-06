@@ -11,5 +11,6 @@ public record DeviceRequest(
                 @JsonProperty("old_serial_num") String oldSerialNum,
                 @JsonProperty("object_name") String objectName,
                 @JsonProperty("object_birth") String objectBirth,
-                @JsonProperty("object_code") String objectCode) {
+                @JsonProperty("object_code") String objectCode,
+                @JsonProperty("nickname") String nickname) {
 }

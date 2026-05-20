@@ -19,7 +19,7 @@ export function Landing() {
                         <Link to="/auth" className="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
                             로그인
                         </Link>
-                        <Link to="/auth" className="text-sm font-medium bg-gray-900 text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors">
+                        <Link to="/auth" state={{ defaultTab: "signup" }} className="text-sm font-medium bg-gray-900 text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors">
                             회원가입
                         </Link>
                     </div>
@@ -62,6 +62,7 @@ export function Landing() {
                                 {/* For demonstration purposes, this goes to /dashboard */}
                                 <Link
                                     to="/auth"
+                                    state={{ defaultTab: "signup" }}
                                     className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3.5 rounded-2xl text-base font-semibold hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/30 transition-all"
                                 >
                                     무료로 시작하기

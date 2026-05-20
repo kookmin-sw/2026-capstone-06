@@ -2,7 +2,6 @@ import { Outlet, Link, useLocation } from "react-router";
 import { 
   Home, 
   BarChart3, 
-  Volume2, 
   Utensils, 
   Wind,
   Dog

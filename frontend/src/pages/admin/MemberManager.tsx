@@ -18,7 +18,7 @@ interface Props {
 
 const empty: any = { seq: 0, memberId: "", memberPw: "", memberName: "", memberPhone: "", roleCode: "USER", roleName: "일반회원", regDate: "", enabled: true };
 
-export function MemberManager({ members, setMembers, onReload }: Props) {
+export function MemberManager({ members, onReload }: Props) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<MemberDto | null>(null);

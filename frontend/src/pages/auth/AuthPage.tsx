@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { ShieldCheck, Mail, Lock, User, Phone } from "lucide-react";
 import { toast } from "sonner";
 import * as authApi from "../../services/authApi";
@@ -7,7 +7,10 @@ import { useAuthStore } from "../../store/authStore";
 import { usePetStore } from "../../store/petStore";
 
 export function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation();
+  const [isLogin, setIsLogin] = useState(() => {
+    return location.state?.defaultTab !== "signup";
+  });
   const [memberId, setMemberId] = useState("");
   const [memberPw, setMemberPw] = useState("");
   const [memberName, setMemberName] = useState("");

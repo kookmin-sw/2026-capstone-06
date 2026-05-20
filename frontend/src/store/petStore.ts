@@ -46,21 +46,11 @@ export const PET_EMOJI: Record<string, string> = {
   other: "🐾",
 };
 
-const initialHouses: PetHouse[] = [
-  {
-    id: "1",
-    name: "1번 하우스",
-    petName: "초코",
-    petType: "dog",
-    location: "거실",
-    online: true,
-    color: "blue",
-  },
-];
+const initialHouses: PetHouse[] = [];
 
 export const usePetStore = create<PetHouseState>((set, get) => ({
   houses: initialHouses,
-  activeHouseId: initialHouses[0].id,
+  activeHouseId: "",
   isLoaded: false,
 
   setActiveHouse: (house) => set({ activeHouseId: house.id }),
@@ -115,23 +105,27 @@ export const usePetStore = create<PetHouseState>((set, get) => ({
         deviceType: string;
         isUse: boolean;
         regDate: string;
+        nickname?: string;
+        objectCode?: string;
+        objectName?: string;
+        objectBirth?: string;
       }>>('/dashboard/devices', { params: { memberId } });
 
       // deviceType === 'HOUSE'인 기기만 펫하우스로 등록
       const houseDevices = data.filter((d) => d.deviceType === 'HOUSE' && d.isUse);
 
       if (houseDevices.length === 0) {
-        // 연결된 기기가 없으면 기본 더미 유지하고 로드 완료로 상태 설정
-        set({ isLoaded: true });
+        // 연결된 기기가 없으면 기기 목록을 비우고 로드 완료
+        set({ houses: [], activeHouseId: "", isLoaded: true });
         return;
       }
 
       const houses: PetHouse[] = houseDevices.map((d, index) => ({
         id: String(d.seq),
-        name: `펫하우스 ${index + 1}`,
-        petName: '-',
-        petType: 'dog' as const,
-        location: '-',
+        name: d.nickname || `펫하우스 ${index + 1}`,
+        petName: d.objectName?.trim() || "",
+        petType: (d.objectCode === "CAT" ? "cat" : d.objectCode === "DOG" ? "dog" : "other") as "dog" | "cat" | "other",
+        location: d.nickname || "-",
         online: true,
         color: COLORS[index % COLORS.length],
         serialNum: d.serialNum,
