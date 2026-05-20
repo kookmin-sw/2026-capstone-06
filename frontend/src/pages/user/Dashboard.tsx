@@ -19,16 +19,25 @@ import { toast } from "sonner";
 import { getLatestSensorData, getDashboardActivities, getDashboardStats } from "../../services/dashboardApi";
 import { usePetHouse } from "../../store/petStore";
 import type { ActivityRes, DailyStatsRes } from "../../types/api";
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+
+const EMPTY_SENSOR_DATA = {
+  co2: null as number | null,
+  temperature: null as number | null,
+  humidity: null as number | null,
+  petPresent: false,
+};
+
+function formatSensorValue(value: number | null, decimals: number): string {
+  if (value === null) return "-";
+  return value.toFixed(decimals);
+}
 
 export function Dashboard() {
   const { activeHouse } = usePetHouse();
 
-  const [currentData, setCurrentData] = useState({
-    co2: 450,
-    temperature: 22.5,
-    humidity: 55,
-    petPresent: true,
-  });
+  const [currentData, setCurrentData] = useState(EMPTY_SENSOR_DATA);
 
   const [cctvConnected] = useState(true);
   const [sendingVoice, setSendingVoice] = useState(false);
@@ -41,6 +50,10 @@ export function Dashboard() {
   useEffect(() => {
     setCurrentPage(1);
   }, [timeFilter, activeHouse.id]);
+
+  useEffect(() => {
+    setCurrentData(EMPTY_SENSOR_DATA);
+  }, [activeHouse.id, activeHouse.deviceId]);
 
   const getFilteredActivities = () => {
     if (timeFilter === 'all') return activities;
@@ -78,12 +91,20 @@ export function Dashboard() {
     const fetchSensorData = async () => {
       try {
         const data = await getLatestSensorData(targetDeviceId);
-        setCurrentData(prev => ({
-          ...prev,
+        if (!data) return;
+
+        const hasSensorReading =
+          data.co2 != null || data.temperature != null || data.humidity != null;
+        if (!hasSensorReading) return;
+
+        setCurrentData((prev) => ({
           co2: data.co2 ?? prev.co2,
           temperature: data.temperature ?? prev.temperature,
           humidity: data.humidity ?? prev.humidity,
-          petPresent: data.heartRate !== null && data.heartRate !== undefined ? data.heartRate > 0 : prev.petPresent,
+          petPresent:
+            data.heartRate != null && data.heartRate !== undefined
+              ? data.heartRate > 0
+              : prev.petPresent,
         }));
       } catch (error) {
         console.error('[Dashboard] API Fetch Error:', error);
@@ -106,12 +127,48 @@ export function Dashboard() {
     fetchSensorData();
     fetchExtraData();
 
-    const interval = setInterval(() => {
-      fetchSensorData();
-      fetchExtraData();
-    }, 3000);
+    // WebSocket STOMP Client Setup
+    const stompClient = new Client({
+      webSocketFactory: () => new SockJS((import.meta.env.VITE_API_BASE_URL || '/api') + '/ws'),
+      debug: (str) => console.log('[STOMP]', str),
+      reconnectDelay: 5000,
+      onConnect: () => {
+        console.log('[STOMP] Connected to WebSocket');
+        stompClient.subscribe(`/topic/sensor/house/${targetDeviceId}`, (message) => {
+          if (message.body) {
+            try {
+              const data = JSON.parse(message.body);
+              setCurrentData((prev) => ({
+                co2: data.co2 ?? prev.co2,
+                temperature: data.temperature ?? prev.temperature,
+                humidity: data.humidity ?? prev.humidity,
+                petPresent:
+                  data.heartRate != null && data.heartRate !== undefined
+                    ? data.heartRate > 0
+                    : prev.petPresent,
+              }));
+            } catch (err) {
+              console.error('[STOMP] Parse Error:', err);
+            }
+          }
+        });
+      },
+      onStompError: (frame) => {
+        console.error('[STOMP] Broker reported error:', frame.headers['message']);
+        console.error('[STOMP] Details:', frame.body);
+      },
+    });
 
-    return () => clearInterval(interval);
+    stompClient.activate();
+
+    const interval = setInterval(() => {
+      fetchExtraData();
+    }, 10000);
+
+    return () => {
+      clearInterval(interval);
+      stompClient.deactivate();
+    };
   }, [activeHouse.id, activeHouse.deviceId]);
 
   const handleSendOwnerVoice = () => {
@@ -123,7 +180,10 @@ export function Dashboard() {
     }, 2000);
   };
 
-  const getStatusColor = (value: number, type: string) => {
+  const getStatusColor = (value: number | null, type: string) => {
+    if (value === null) {
+      return { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-500', status: '-' };
+    }
     if (type === 'co2') {
       if (value > 600) return { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', status: '위험' };
       if (value > 500) return { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', status: '주의' };
@@ -316,7 +376,7 @@ export function Dashboard() {
             <div className="space-y-3">
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-bold text-gray-900">
-                  {currentData.co2.toFixed(0)}
+                  {formatSensorValue(currentData.co2, 0)}
                 </span>
                 <span className="text-lg text-gray-500">ppm</span>
               </div>
@@ -342,7 +402,7 @@ export function Dashboard() {
             <div className="space-y-3">
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-bold text-gray-900">
-                  {currentData.temperature.toFixed(1)}
+                  {formatSensorValue(currentData.temperature, 1)}
                 </span>
                 <span className="text-lg text-gray-500">°C</span>
               </div>
@@ -368,7 +428,7 @@ export function Dashboard() {
             <div className="space-y-3">
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-bold text-gray-900">
-                  {currentData.humidity.toFixed(0)}
+                  {formatSensorValue(currentData.humidity, 0)}
                 </span>
                 <span className="text-lg text-gray-500">%</span>
               </div>

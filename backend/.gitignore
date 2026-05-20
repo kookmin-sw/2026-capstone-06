@@ -48,3 +48,5 @@ code_api.txt
 keys/capstone-server-key.pem
 
 scratch/
+
+backend_logs.txt

@@ -1,6 +1,7 @@
 package com.capstone.pethouse.domain.dashboard.repository;
 
 import com.capstone.pethouse.domain.dashboard.dto.response.SensorDataResponse;
+import com.capstone.pethouse.domain.sensor.influx.InfluxWriter;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.query.FluxRecord;
 import com.influxdb.query.FluxTable;
@@ -32,8 +33,8 @@ public class DashboardSensorRepository {
     public SensorDataResponse getLatestSensorData(String deviceId) {
         String flux = String.format("from(bucket:\"%s\") " +
                 "|> range(start: -30d) " +
-                "|> filter(fn: (r) => r._measurement == \"sensor\" and r.deviceId == \"%s\") " +
-                "|> last()", bucket, deviceId);
+                "|> filter(fn: (r) => r._measurement == \"%s\" and r.deviceId == \"%s\") " +
+                "|> last()", bucket, InfluxWriter.MEASUREMENT_HOUSE, deviceId);
 
         try {
             List<FluxTable> tables = influxDBClient.getQueryApi().query(flux, organization);
@@ -56,10 +57,10 @@ public class DashboardSensorRepository {
 
             return new SensorDataResponse(
                     deviceId,
-                    getDouble(fields.get("temperature")),
-                    getDouble(fields.get("humidity")),
-                    getDouble(fields.get("heartRate")),
-                    getDouble(fields.get("co2")),
+                    getDouble(fields.get("temVal")),
+                    getDouble(fields.get("humVal")),
+                    null,
+                    getDouble(fields.get("coVal")),
                     lastUpdate
             );
         } catch (Exception e) {
