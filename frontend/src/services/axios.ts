@@ -16,18 +16,36 @@ const apiClient = axios.create({
   },
 });
 
-// ── 요청 인터셉터 ──────────────────────────────────────────────────
-apiClient.interceptors.request.use(
-  (config) => {
-    // authStore에서 accessToken을 읽어 Authorization 헤더에 자동 주입
-    const token = useAuthStore.getState().accessToken;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// ── JWT 토큰 파싱 유틸 ──────────────────────────────────────────────
+/** JWT 토큰을 파싱해서 payload 반환 */
+const parseJWT = (token: string): any => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.error('[JWT] Token parse error:', e);
+    return null;
+  }
+};
+
+/** 토큰 만료 여부 확인 (5분 여유) */
+const isTokenExpiringSoon = (token: string, bufferMinutes: number = 5): boolean => {
+  const payload = parseJWT(token);
+  if (!payload || !payload.exp) return false;
+  
+  const expiresAt = payload.exp * 1000; // 밀리초로 변환
+  const now = Date.now();
+  const bufferMs = bufferMinutes * 60 * 1000;
+  
+  return now + bufferMs > expiresAt;
+};
 
 // 토큰 갱신 재시도 플래그 (무한루프 방지)
 let isRefreshing = false;
@@ -37,6 +55,52 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token)));
   failedQueue = [];
 };
+
+// ── 요청 인터셉터 ──────────────────────────────────────────────────
+apiClient.interceptors.request.use(
+  async (config) => {
+    const authState = useAuthStore.getState();
+    const token = authState.accessToken;
+    
+    if (!token) {
+      return config;
+    }
+
+    // 🔧 토큰이 5분 내에 만료되면 미리 갱신
+    if (isTokenExpiringSoon(token)) {
+      const refreshToken = authState.refreshToken;
+      if (refreshToken && !isRefreshing) {
+        isRefreshing = true;
+        try {
+          const { data } = await axios.post(
+            `${apiClient.defaults.baseURL}/member/refresh`,
+            { refreshToken },
+            { headers: { 'Content-Type': 'application/json' } }
+          );
+          const newAccessToken: string = data.accessToken;
+          const newRefreshToken: string = data.refreshToken;
+          
+          authState.setTokens(newAccessToken, newRefreshToken);
+          config.headers.Authorization = `Bearer ${newAccessToken}`;
+          
+          console.log('[JWT] Token refreshed preemptively');
+        } catch (error) {
+          console.error('[JWT] Preemptive refresh failed:', error);
+          authState.logout();
+          window.location.href = '/auth';
+        } finally {
+          isRefreshing = false;
+        }
+      }
+    } else {
+      // 정상 토큰 주입
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // ── 응답 인터셉터 ──────────────────────────────────────────────────
 apiClient.interceptors.response.use(

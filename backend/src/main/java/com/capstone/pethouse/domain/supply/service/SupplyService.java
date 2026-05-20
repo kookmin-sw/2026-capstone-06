@@ -2,6 +2,7 @@ package com.capstone.pethouse.domain.supply.service;
 
 import com.capstone.pethouse.domain.device.entity.PetHouse;
 import com.capstone.pethouse.domain.device.repository.PetHouseRepository;
+import com.capstone.pethouse.domain.enums.FeedType;
 import com.capstone.pethouse.domain.supply.dto.request.SupplyLogRequest;
 import com.capstone.pethouse.domain.supply.dto.request.SupplyScheduleRequest;
 import com.capstone.pethouse.domain.supply.dto.response.SupplyToggleResponse;
@@ -12,13 +13,18 @@ import com.capstone.pethouse.domain.supply.entity.SupplyLog;
 import com.capstone.pethouse.domain.supply.entity.SupplySchedule;
 import com.capstone.pethouse.domain.supply.repository.SupplyLogRepository;
 import com.capstone.pethouse.domain.supply.repository.SupplyScheduleRepository;
+import com.capstone.pethouse.infra.mqtt.MqttCommandService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+
+@Slf4j
 @RequiredArgsConstructor
 @Transactional
 @Service
@@ -27,6 +33,7 @@ public class SupplyService {
     private final SupplyLogRepository supplyLogRepository;
     private final PetHouseRepository petHouseRepository;
     private final SupplyScheduleRepository supplyScheduleRepository;
+    private final MqttCommandService mqttCommandService;
 
     @Transactional(readOnly = true)
     public Page<SupplyScheduleResponse> getSupplySchedules(Long houseId, Pageable pageable) {
@@ -90,6 +97,16 @@ public class SupplyService {
 
     public SupplyLogResponse recordSupplyLog(Long houseId, SupplyLogRequest supplyLogRequest) {
         PetHouse petHouse = petHouseRepository.getReferenceById(houseId);
+
+        // MQTT 커맨드를 디바이스에 발행 (급식 or 급수)
+        String action = supplyLogRequest.feedType() == FeedType.FOOD ? "SUPPLY_FOOD" : "SUPPLY_WATER";
+        Map<String, Object> params = Map.of(
+                "feedType", supplyLogRequest.feedType().name(),
+                "unitType", supplyLogRequest.unitType().getValue(),
+                "amount", supplyLogRequest.amount()
+        );
+        mqttCommandService.sendCommand(houseId, action, params);
+        log.info("Supply command sent — houseId={}, action={}, params={}", houseId, action, params);
 
         SupplyLog supplyLog = SupplyLog.ofManual(
                 petHouse,

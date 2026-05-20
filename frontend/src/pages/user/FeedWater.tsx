@@ -143,16 +143,22 @@ export function FeedWater() {
   const handleManualFeed = async (amount: number) => {
     if (!activeHouse?.id) return;
     try {
-      await supplyApi.recordSupplyLog(activeHouse.id, {
+      console.log('[FeedWater] 급여 요청 시작:', { amount, houseId: activeHouse.id });
+      const response = await supplyApi.recordSupplyLog(activeHouse.id, {
         scheduleId: null,
         feedType: 'FOOD',
         unitType: 'g',
         amount: amount,
         triggerType: 'MANUAL'
       });
+      console.log('[FeedWater] 급여 요청 완료:', response);
       toast.success(`사료 ${amount}g이 공급되었습니다`);
-      fetchData();
+      // 약간의 딜레이 후 데이터 갱신 (MQTT 처리 완료 대기)
+      setTimeout(() => {
+        fetchData();
+      }, 500);
     } catch (error) {
+      console.error('[FeedWater] 급여 요청 실패:', error);
       toast.error("사료 공급에 실패했습니다");
     }
   };
@@ -160,16 +166,22 @@ export function FeedWater() {
   const handleManualWater = async (amount: number) => {
     if (!activeHouse?.id) return;
     try {
-      await supplyApi.recordSupplyLog(activeHouse.id, {
+      console.log('[FeedWater] 급수 요청 시작:', { amount, houseId: activeHouse.id });
+      const response = await supplyApi.recordSupplyLog(activeHouse.id, {
         scheduleId: null,
         feedType: 'WATER',
         unitType: 'ml',
         amount: amount,
         triggerType: 'MANUAL'
       });
+      console.log('[FeedWater] 급수 요청 완료:', response);
       toast.success(`물 ${amount}ml가 공급되었습니다`);
-      fetchData();
+      // 약간의 딜레이 후 데이터 갱신 (MQTT 처리 완료 대기)
+      setTimeout(() => {
+        fetchData();
+      }, 500);
     } catch (error) {
+      console.error('[FeedWater] 급수 요청 실패:', error);
       toast.error("물 공급에 실패했습니다");
     }
   };

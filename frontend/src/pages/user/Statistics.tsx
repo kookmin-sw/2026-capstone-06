@@ -22,25 +22,30 @@ export function Statistics() {
   const [data, setData] = useState<any[]>([]);
 
   useEffect(() => {
+    // 먼저 pollInterval 결정
+    let range = '-24h';
+    let interval = '10m';
+    let pollInterval = 10 * 60 * 1000;  // 10분 = 600초
+    
+    if (period === 'weekly') {
+      range = '-7d';
+      interval = '1h';
+      pollInterval = 60 * 60 * 1000;    // 1시간
+    } else if (period === 'monthly') {
+      range = '-30d';
+      interval = '6h';
+      pollInterval = 6 * 60 * 60 * 1000; // 6시간
+    }
+
     const fetchData = async () => {
       try {
-        let range = '-24h';
-        let interval = '1h';
-        
-        if (period === 'weekly') {
-          range = '-7d';
-          interval = '6h';
-        } else if (period === 'monthly') {
-          range = '-30d';
-          interval = '1d';
-        }
-
         // petStore에 serialNum이 있으면 사용 (로그인 후 loadDevicesFromServer 호출 결과)
         // 없으면 activeHouse.id로 폴백 (개발 환경 또는 더미 데이터)
         if (!activeHouse?.id) return;
         const serialNum = activeHouse.serialNum ?? activeHouse.id;
         
         const response = await sensorApi.getChartData(serialNum, range, interval);
+        console.log('[Stats] Raw response:', response); // 🔍 전체 응답 확인
         
         // 데이터 매핑: SensorResponse -> 차트 데이터
         const mapped = response.map(item => {
@@ -66,12 +71,25 @@ export function Statistics() {
           };
         });
         
-        setData(mapped);
+        console.log('[Stats] Mapped data:', mapped); // 🔍 mapping 후 데이터 확인
+        console.log('[Stats] Data fetched at', new Date().toLocaleTimeString(), '| Items:', mapped.length, '| Latest:', mapped[mapped.length - 1]);
+        // 🔧 새로운 배열 객체로 강제 생성 (recharts 재렌더링용)
+        setData([...mapped]);
       } catch (error) {
         console.error('[Stats] Fetch Error:', error);
       }
     };
+
+    // 초기 로드
     fetchData();
+
+    // 주기적 polling (interval에 맞춰 설정)
+    const timer = setInterval(() => {
+      fetchData();
+    }, pollInterval);
+
+    // cleanup
+    return () => clearInterval(timer);
   }, [period, activeHouse]);
 
   return (
@@ -97,7 +115,7 @@ export function Statistics() {
               <CardTitle>이산화탄소 (CO₂) 추이</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={300} key={`co2-${data.length}`}>
                 <AreaChart data={data}>
                   <defs>
                     <linearGradient id="colorCo2" x1="0" y1="0" x2="0" y2="1">
@@ -146,7 +164,7 @@ export function Statistics() {
               <CardTitle>온도 추이</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={300} key={`temp-${data.length}`}>
                 <LineChart data={data}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis 
@@ -189,7 +207,7 @@ export function Statistics() {
               <CardTitle>습도 추이</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={300} key={`humidity-${data.length}`}>
                 <AreaChart data={data}>
                   <defs>
                     <linearGradient id="colorHumidity" x1="0" y1="0" x2="0" y2="1">
@@ -239,7 +257,7 @@ export function Statistics() {
               <CardTitle>통합 추이</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
+              <ResponsiveContainer width="100%" height={350} key={`combined-${data.length}`}>
                 <LineChart data={data}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis 

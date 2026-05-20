@@ -101,10 +101,7 @@ export function Dashboard() {
           co2: data.co2 ?? prev.co2,
           temperature: data.temperature ?? prev.temperature,
           humidity: data.humidity ?? prev.humidity,
-          petPresent:
-            data.heartRate != null && data.heartRate !== undefined
-              ? data.heartRate > 0
-              : prev.petPresent,
+          petPresent: prev.petPresent,
         }));
       } catch (error) {
         console.error('[Dashboard] API Fetch Error:', error);
@@ -128,8 +125,9 @@ export function Dashboard() {
     fetchExtraData();
 
     // WebSocket STOMP Client Setup
+    const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:8081';
     const stompClient = new Client({
-      webSocketFactory: () => new SockJS((import.meta.env.VITE_API_BASE_URL || '/api') + '/ws'),
+      webSocketFactory: () => new SockJS(wsUrl + '/api/ws'),
       debug: (str) => console.log('[STOMP]', str),
       reconnectDelay: 5000,
       onConnect: () => {
@@ -138,14 +136,12 @@ export function Dashboard() {
           if (message.body) {
             try {
               const data = JSON.parse(message.body);
+              console.log('[STOMP] Parsed data:', data); // 🔍 WebSocket 데이터 확인
               setCurrentData((prev) => ({
-                co2: data.co2 ?? prev.co2,
-                temperature: data.temperature ?? prev.temperature,
-                humidity: data.humidity ?? prev.humidity,
-                petPresent:
-                  data.heartRate != null && data.heartRate !== undefined
-                    ? data.heartRate > 0
-                    : prev.petPresent,
+                co2: data.coVal ?? prev.co2,
+                temperature: data.temVal ?? prev.temperature,
+                humidity: data.humVal ?? prev.humidity,
+                petPresent: prev.petPresent,
               }));
             } catch (err) {
               console.error('[STOMP] Parse Error:', err);
@@ -478,7 +474,7 @@ export function Dashboard() {
                         </Badge>
                       </div>
                       {activity.details && (
-                        <div className="text-xs text-gray-500 mt-1 pl-[2px]">{activity.details}</div>
+                        <div className="text-xs text-gray-500 mt-1 pl-0.5">{activity.details}</div>
                       )}
                     </div>
                   </div>
