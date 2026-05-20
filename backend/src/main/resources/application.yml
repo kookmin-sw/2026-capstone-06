@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: pet-house-monitoring
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/pet_house_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&createDatabaseIfNotExist=true}
+    username: ${DB_USERNAME:pet_house}
+    password: ${DB_PASSWORD:pet_house_pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      initialization-fail-timeout: 60000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_size: 100
+
+server:
+  servlet:
+    context-path: /api
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET:dGVzdC1zZWNyZXQta2V5LXRoYXQtaXMtYXQtbGVhc3QtMzItYnl0ZXMtbG9uZyEh}
+  access-token-expiry: 1800000
+  refresh-token-expiry: 1209600000
+
+# MQTT (EMQX)
+mqtt:
+  broker:
+    url: ${MQTT_BROKER_URL:tcp://localhost:1883}
+  client:
+    id: pet-house-server-${random.uuid}
+  username: ${MQTT_USERNAME:}
+  password: ${MQTT_PASSWORD:}
+  default-qos: 1
+  keep-alive-interval: 60
+  connection-timeout: 30
+  auto-reconnect: true
+  clean-session: true
+
+# InfluxDB
+influxdb:
+  url: ${INFLUXDB_URL:http://localhost:8086}
+  token: ${INFLUXDB_TOKEN:dev-token}
+  org: ${INFLUXDB_ORG:pethouse}
+  bucket: ${INFLUXDB_BUCKET:sensor_data}
+
+# File upload
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:./uploads}
+
+# Multipart 업로드 사이즈 제한
+spring.servlet.multipart:
+  max-file-size: 50MB
+  max-request-size: 50MB

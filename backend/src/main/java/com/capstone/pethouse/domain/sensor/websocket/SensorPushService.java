@@ -1,0 +1,25 @@
+package com.capstone.pethouse.domain.sensor.websocket;
+
+import com.capstone.pethouse.domain.sensor.dto.SensorResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Component;
+
+@Slf4j
+@RequiredArgsConstructor
+@Component
+public class SensorPushService {
+
+    private static final String HOUSE_TOPIC_PREFIX = "/topic/sensor/house/";
+
+    private final SimpMessagingTemplate messagingTemplate;
+
+    public void pushHouse(SensorResponse data) {
+        try {
+            messagingTemplate.convertAndSend(HOUSE_TOPIC_PREFIX + data.deviceId(), data);
+        } catch (Exception e) {
+            log.warn("WebSocket push failed (house) for {}: {}", data.deviceId(), e.getMessage());
+        }
+    }
+}
