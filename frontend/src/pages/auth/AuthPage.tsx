@@ -68,11 +68,15 @@ export function AuthPage() {
       }
     } catch (error: any) {
       console.error("[AuthPage] 처리 실패:", error);
-      const msg =
-        error?.response?.data?.message ??
-        (isLogin
+      let msg = error?.response?.data;
+      if (msg && typeof msg === 'object' && msg.message) {
+        msg = msg.message;
+      }
+      if (!msg || typeof msg !== 'string') {
+        msg = isLogin
           ? "아이디 또는 비밀번호를 확인해 주세요."
-          : "회원가입 중 오류가 발생했습니다.");
+          : "회원가입 중 오류가 발생했습니다.";
+      }
       toast.error(msg);
     } finally {
       setIsLoading(false);

@@ -2,13 +2,13 @@
 set -e
 
 # InfluxDB 2.x Initialization Script
-# 배치 write 방식: 모든 포인트를 단일 influx write 호출로 처리
+# 諛곗튂 write 諛⑹떇: 紐⑤뱺 ?ъ씤?몃? ?⑥씪 influx write ?몄텧濡?泥섎━
 echo "Starting InfluxDB data initialization..."
 
 NOW=$(date +%s)
 
-# 온도 패턴 배열 (case 대신 배열 사용)
-# 형식: "TEMP HUM CO2 LIGHT"
+# ?⑤룄 ?⑦꽩 諛곗뿴 (case ???諛곗뿴 ?ъ슜)
+# ?뺤떇: "TEMP HUM CO2 LIGHT"
 PATTERN_01=(
   "24.2 58.1 412 0"
   "24.5 57.8 415 0"
@@ -48,9 +48,9 @@ PATTERN_03=(
   "20.8 64.7 408 10"
 )
 
-# 배치 데이터 생성 후 단일 write 호출
+# 諛곗튂 ?곗씠???앹꽦 ???⑥씪 write ?몄텧
 {
-  # PET-HOUSE-01: 최근 24시간, 10분(600초) 간격
+  # PET-HOUSE-01: 理쒓렐 24?쒓컙, 10遺?600珥? 媛꾧꺽
   DEVICE="PET-HOUSE-01"
   LEN=${#PATTERN_01[@]}
   for i in $(seq 0 10 1440); do
@@ -60,7 +60,7 @@ PATTERN_03=(
     echo "sensor_data,device_id=${DEVICE} temperature=${TEMP},humidity=${HUM},co2=${CO2},light=${LIGHT} ${T}"
   done
 
-  # PET-HOUSE-02: 24시간 전 ~ 12시간 전 구간, 10분 간격
+  # PET-HOUSE-02: 24?쒓컙 ??~ 12?쒓컙 ??援ш컙, 10遺?媛꾧꺽
   DEVICE="PET-HOUSE-02"
   LEN=${#PATTERN_02[@]}
   OFFSET=$((24 * 60))
@@ -71,7 +71,7 @@ PATTERN_03=(
     echo "sensor_data,device_id=${DEVICE} temperature=${TEMP},humidity=${HUM},co2=${CO2},light=${LIGHT} ${T}"
   done
 
-  # PET-HOUSE-03: 최근 24시간, 15분(900초) 간격
+  # PET-HOUSE-03: 理쒓렐 24?쒓컙, 15遺?900珥? 媛꾧꺽
   DEVICE="PET-HOUSE-03"
   LEN=${#PATTERN_03[@]}
   for i in $(seq 0 15 1440); do
@@ -81,14 +81,14 @@ PATTERN_03=(
     echo "sensor_data,device_id=${DEVICE} temperature=${TEMP},humidity=${HUM},co2=${CO2},light=${LIGHT} ${T}"
   done
 
-  # 모션 이벤트 - PET-HOUSE-01
+  # 紐⑥뀡 ?대깽??- PET-HOUSE-01
   DEVICE="PET-HOUSE-01"
   for i in 5 30 90 180 360 480 720 900 1080; do
     T=$((NOW - i * 60))
     echo "motion_event,device_id=${DEVICE} detected=1 ${T}"
   done
 
-  # 모션 이벤트 - PET-HOUSE-03
+  # 紐⑥뀡 ?대깽??- PET-HOUSE-03
   DEVICE="PET-HOUSE-03"
   for i in 10 60 200 500 800; do
     T=$((NOW - i * 60))
@@ -96,6 +96,7 @@ PATTERN_03=(
   done
 
 } | influx write \
+    --host http://localhost:9999 \
     -b "${DOCKER_INFLUXDB_INIT_BUCKET}" \
     -o "${DOCKER_INFLUXDB_INIT_ORG}" \
     -t "${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN}" \

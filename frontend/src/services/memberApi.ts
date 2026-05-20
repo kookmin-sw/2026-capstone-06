@@ -65,3 +65,30 @@ export const deleteMember = async (seq: number, memberId: string): Promise<any> 
   });
   return data;
 };
+
+export const getMemberByMemberId = async (memberId: string): Promise<any> => {
+  const { data } = await apiClient.get(`/member/id/${memberId}`);
+  return data;
+};
+
+export const getAccountStatus = async (memberId: string): Promise<{ enabled: boolean }> => {
+  const { data } = await apiClient.get<{ enabled: boolean }>('/member/status', {
+    params: { memberId }
+  });
+  return data;
+};
+
+export const updateMember = async (req: any): Promise<any> => {
+  const { data } = await apiClient.put('/member', req);
+  return data;
+};
+
+export const deactivateMember = async (memberId: string, memberPw: string): Promise<any> => {
+  const { data } = await apiClient.patch('/member/deactivate', { memberId, memberPw });
+  return data;
+};
+
+export const reactivateMember = async (memberId: string): Promise<any> => {
+  const { data } = await apiClient.patch('/member/reactivate', { memberId });
+  return data;
+};

@@ -121,7 +121,8 @@ export const usePetStore = create<PetHouseState>((set, get) => ({
       const houseDevices = data.filter((d) => d.deviceType === 'HOUSE' && d.isUse);
 
       if (houseDevices.length === 0) {
-        // 연결된 기기가 없으면 기본 더미 유지
+        // 연결된 기기가 없으면 기본 더미 유지하고 로드 완료로 상태 설정
+        set({ isLoaded: true });
         return;
       }
 

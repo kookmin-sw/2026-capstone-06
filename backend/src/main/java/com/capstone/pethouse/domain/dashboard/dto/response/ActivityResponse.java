@@ -11,4 +11,5 @@ public class ActivityResponse {
     private String type; // FAN, WATER, FOOD
     private String message;
     private LocalDateTime timestamp;
+    private String details;
 }

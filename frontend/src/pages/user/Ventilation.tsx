@@ -93,6 +93,43 @@ export function Ventilation() {
   const [autoRules, setAutoRules] = useState<AutoRule[]>([]);
   const [history, setHistory] = useState<VentilationHistory[]>([]);
   const [statistics, setStatistics] = useState<any>(null);
+  const [timeFilter, setTimeFilter] = useState<'1h' | '24h' | '1m' | '3m' | 'all'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [timeFilter, activeHouse?.id]);
+
+  const getFilteredHistory = () => {
+    if (timeFilter === 'all') return history;
+
+    const now = new Date();
+    return history.filter((item) => {
+      const itemDate = new Date(item.timestamp);
+      const diffMs = now.getTime() - itemDate.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+
+      if (timeFilter === '1h') {
+        return diffHours <= 1;
+      }
+      if (timeFilter === '24h') {
+        return diffHours <= 24;
+      }
+      if (timeFilter === '1m') {
+        return diffHours <= 24 * 30;
+      }
+      if (timeFilter === '3m') {
+        return diffHours <= 24 * 90;
+      }
+      return true;
+    });
+  };
+
+  const filteredHistory = getFilteredHistory();
+  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedHistory = filteredHistory.slice(startIndex, startIndex + itemsPerPage);
 
   const fetchSchedules = async () => {
     try {
@@ -110,7 +147,7 @@ export function Ventilation() {
       const stats = await fanApi.getFanStatistics(activeHouse.id);
       setStatistics(stats);
 
-      const histPage = await fanApi.getFanHistory(activeHouse.id, 0, 10);
+      const histPage = await fanApi.getFanHistory(activeHouse.id, 0, 200);
       setHistory(histPage.content.map(toVentilationHistory));
     } catch (error) {
       console.error('[Ventilation] Fetch History/Stats Error:', error);
@@ -903,45 +940,86 @@ export function Ventilation() {
 
       {/* History */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
           <CardTitle>환풍 이력</CardTitle>
+          <select
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value as any)}
+            className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 cursor-pointer shadow-xs transition-all hover:border-slate-300"
+          >
+            <option value="1h">1시간 전</option>
+            <option value="24h">하루 전</option>
+            <option value="1m">한달 전</option>
+            <option value="3m">3달 전</option>
+            <option value="all">전체 정보</option>
+          </select>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {history.map((item) => {
-              const { date, time } = formatDateTime(item.timestamp);
-              return (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
-                >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    item.mode === 'auto' ? 'bg-blue-100' : 'bg-purple-100'
-                  }`}>
-                    <Wind className={`w-5 h-5 ${item.mode === 'auto' ? 'text-blue-600' : 'text-purple-600'}`} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-gray-900">{item.duration}분 작동</span>
-                      <Badge variant={item.mode === 'auto' ? 'default' : 'secondary'}>
-                        {item.mode === 'auto' ? '자동' : '수동'}
-                      </Badge>
-                      <Badge variant="outline">강도 {item.intensity}%</Badge>
+            {paginatedHistory.length > 0 ? (
+              paginatedHistory.map((item) => {
+                const { date, time } = formatDateTime(item.timestamp);
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
+                  >
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      item.mode === 'auto' ? 'bg-blue-100' : 'bg-purple-100'
+                    }`}>
+                      <Wind className={`w-5 h-5 ${item.mode === 'auto' ? 'text-blue-600' : 'text-purple-600'}`} />
                     </div>
-                    <div className="text-sm text-gray-500 mt-1 flex items-center gap-2">
-                      <Calendar className="w-3 h-3" />
-                      {date} {time}
-                    </div>
-                    {item.trigger && (
-                      <div className="text-sm text-blue-600 mt-1 flex items-center gap-1">
-                        <Thermometer className="w-3 h-3" />
-                        {item.trigger}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-gray-900">{item.duration}분 작동</span>
+                        <Badge variant={item.mode === 'auto' ? 'default' : 'secondary'}>
+                          {item.mode === 'auto' ? '자동' : '수동'}
+                        </Badge>
+                        <Badge variant="outline">강도 {item.intensity}%</Badge>
                       </div>
-                    )}
+                      <div className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                        <Calendar className="w-3 h-3" />
+                        {date} {time}
+                      </div>
+                      {item.trigger && (
+                        <div className="text-sm text-blue-600 mt-1 flex items-center gap-1">
+                          <Thermometer className="w-3 h-3" />
+                          {item.trigger}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="text-center py-6 text-gray-400">환풍 이력이 없습니다.</div>
+            )}
+
+            {filteredHistory.length > itemsPerPage && (
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 transition-all cursor-pointer"
+                >
+                  이전
+                </Button>
+                <span className="text-xs font-semibold text-slate-500">
+                  페이지 {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 transition-all cursor-pointer"
+                >
+                  다음
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

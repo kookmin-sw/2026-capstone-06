@@ -52,6 +52,7 @@ export interface ActivityRes {
   type: 'FAN' | 'FOOD' | 'WATER';
   message: string;
   timestamp: string;
+  details?: string;
 }
 
 export interface DailyStatsRes {
@@ -157,8 +158,8 @@ export interface FanStatsResponse {
 /** 백엔드 enum: FOOD, WATER */
 export type FeedType = 'FOOD' | 'WATER';
 
-/** 백엔드 enum: GRAM, ML */
-export type UnitType = 'GRAM' | 'ML';
+/** 백엔드 enum: g, ml */
+export type UnitType = 'g' | 'ml';
 
 /** 백엔드 enum: AUTO, MANUAL */
 export type TriggerType = 'AUTO' | 'MANUAL';

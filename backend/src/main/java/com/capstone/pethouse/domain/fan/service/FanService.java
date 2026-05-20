@@ -41,6 +41,9 @@ public class FanService {
     private final PetHouseRepository petHouseRepository;
     private final MqttCommandService mqttCommandService;
     private final FanLogRepository fanLogRepository;
+    private final com.capstone.pethouse.domain.dashboard.repository.DashboardSensorRepository dashboardSensorRepository;
+
+    private final java.util.concurrent.ConcurrentHashMap<Long, java.time.LocalDateTime> fanStartTimes = new java.util.concurrent.ConcurrentHashMap<>();
 
     @Transactional(readOnly = true)
     public Page<FanScheduleResponse> getFanSchedules(Long houseId, Pageable pageable) {
@@ -112,7 +115,7 @@ public class FanService {
 
     public FanControlResponse controlFan(Long houseId, FanControlRequest request) {
         // 1. 펫하우스 존재 여부 확인
-        petHouseRepository.findById(houseId)
+        PetHouse petHouse = petHouseRepository.findById(houseId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 펫하우스를 찾을 수 없습니다."));
 
         // 2. MQTT 제어 명령 전송
@@ -121,6 +124,55 @@ public class FanService {
                 "intensity", request.intensity()
         );
         mqttCommandService.sendCommand(houseId, "fanControl", params);
+
+        // 3. 수동 작동 이력(FanLog) 저장 및 관리
+        if (request.isRunning()) {
+            // 환풍기가 가동을 시작할 때 가동 시작 시각 기록
+            fanStartTimes.put(houseId, LocalDateTime.now());
+        } else {
+            // 환풍기가 정지될 때 가동 이력 기록 생성 및 저장
+            LocalDateTime startTime = fanStartTimes.remove(houseId);
+            if (startTime == null) {
+                // 이전 시작 기록이 없을 경우 최근 10분 동안 작동한 것으로 임시 산정
+                startTime = LocalDateTime.now().minusMinutes(10);
+            }
+            LocalDateTime endTime = LocalDateTime.now();
+
+            // 최신 온도를 InfluxDB에서 획득 시도
+            java.math.BigDecimal temperature = java.math.BigDecimal.valueOf(25.0);
+            try {
+                if (petHouse.getDevices() != null) {
+                    String deviceId = petHouse.getDevices().stream()
+                            .filter(com.capstone.pethouse.domain.device.entity.Device::isUse)
+                            .map(com.capstone.pethouse.domain.device.entity.Device::getDeviceId)
+                            .findFirst()
+                            .orElse(null);
+                    if (deviceId != null) {
+                        com.capstone.pethouse.domain.dashboard.dto.response.SensorDataResponse sensorData =
+                                dashboardSensorRepository.getLatestSensorData(deviceId);
+                        if (sensorData != null && sensorData.temperature() != null) {
+                            temperature = java.math.BigDecimal.valueOf(sensorData.temperature());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // 예외 발생 시 기본 온도(25.0) 유지
+            }
+
+            Integer speed = request.intensity() != null ? request.intensity() : 50;
+
+            FanLog fanLog = FanLog.of(
+                    null, // scheduleId (수동 제어이므로 null)
+                    petHouse,
+                    temperature,
+                    speed,
+                    startTime,
+                    endTime,
+                    com.capstone.pethouse.domain.enums.TriggerType.MANUAL,
+                    com.capstone.pethouse.domain.enums.ExecutionStatus.SUCCESS
+            );
+            fanLogRepository.save(fanLog);
+        }
 
         return FanControlResponse.of(houseId, request.isRunning(), request.intensity());
     }

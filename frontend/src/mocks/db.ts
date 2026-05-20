@@ -58,19 +58,19 @@ export const MOCK_FAN_SCHEDULES: FanScheduleResponse[] = [
 ];
 
 export const MOCK_SUPPLY_SCHEDULES: SupplyScheduleResponse[] = [
-  { houseId: 1, scheduleId: 1, feedType: 'FOOD', unitType: 'GRAM', amount: 100, cronExpression: '0 0 8 * * ?', enabled: true, lastRunAt: null },
-  { houseId: 1, scheduleId: 2, feedType: 'FOOD', unitType: 'GRAM', amount: 100, cronExpression: '0 0 18 * * ?', enabled: true, lastRunAt: null },
-  { houseId: 1, scheduleId: 3, feedType: 'WATER', unitType: 'ML', amount: 200, cronExpression: '0 0 9 * * ?', enabled: true, lastRunAt: null },
-  { houseId: 1, scheduleId: 4, feedType: 'WATER', unitType: 'ML', amount: 200, cronExpression: '0 0 15 * * ?', enabled: true, lastRunAt: null },
-  { houseId: 1, scheduleId: 5, feedType: 'WATER', unitType: 'ML', amount: 200, cronExpression: '0 0 21 * * ?', enabled: true, lastRunAt: null },
+  { houseId: 1, scheduleId: 1, feedType: 'FOOD', unitType: 'g', amount: 100, cronExpression: '0 0 8 * * ?', enabled: true, lastRunAt: null },
+  { houseId: 1, scheduleId: 2, feedType: 'FOOD', unitType: 'g', amount: 100, cronExpression: '0 0 18 * * ?', enabled: true, lastRunAt: null },
+  { houseId: 1, scheduleId: 3, feedType: 'WATER', unitType: 'ml', amount: 200, cronExpression: '0 0 9 * * ?', enabled: true, lastRunAt: null },
+  { houseId: 1, scheduleId: 4, feedType: 'WATER', unitType: 'ml', amount: 200, cronExpression: '0 0 15 * * ?', enabled: true, lastRunAt: null },
+  { houseId: 1, scheduleId: 5, feedType: 'WATER', unitType: 'ml', amount: 200, cronExpression: '0 0 21 * * ?', enabled: true, lastRunAt: null },
 ];
 
 export const MOCK_SUPPLY_HISTORY: SupplyLogHistoryResponse[] = [
-  { houseId: 1, scheduleId: null, feedType: 'WATER', unitType: 'ML', amount: 200, triggerType: 'MANUAL', executionStatus: 'SUCCESS', createdAt: '2026-03-15T14:23:00' },
-  { houseId: 1, scheduleId: 1, feedType: 'FOOD', unitType: 'GRAM', amount: 100, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-03-15T12:00:00' },
-  { houseId: 1, scheduleId: 3, feedType: 'WATER', unitType: 'ML', amount: 200, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-03-15T09:00:00' },
-  { houseId: 1, scheduleId: 1, feedType: 'FOOD', unitType: 'GRAM', amount: 100, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-03-15T08:00:00' },
-  { houseId: 1, scheduleId: 5, feedType: 'WATER', unitType: 'ML', amount: 200, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-03-14T21:00:00' },
+  { houseId: 1, scheduleId: null, feedType: 'WATER', unitType: 'ml', amount: 200, triggerType: 'MANUAL', executionStatus: 'SUCCESS', createdAt: '2026-03-15T14:23:00' },
+  { houseId: 1, scheduleId: 1, feedType: 'FOOD', unitType: 'g', amount: 100, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-03-15T12:00:00' },
+  { houseId: 1, scheduleId: 3, feedType: 'WATER', unitType: 'ml', amount: 200, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-03-15T09:00:00' },
+  { houseId: 1, scheduleId: 1, feedType: 'FOOD', unitType: 'g', amount: 100, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-03-15T08:00:00' },
+  { houseId: 1, scheduleId: 5, feedType: 'WATER', unitType: 'ml', amount: 200, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-03-14T21:00:00' },
 ];
 
 export const MOCK_VENTILATION_HISTORY = [

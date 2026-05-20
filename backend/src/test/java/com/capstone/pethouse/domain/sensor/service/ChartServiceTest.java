@@ -4,8 +4,7 @@ import com.capstone.pethouse.domain.device.entity.Device;
 import com.capstone.pethouse.domain.User.entity.User;
 import com.capstone.pethouse.domain.device.repository.DeviceRepository;
 import com.capstone.pethouse.domain.sensor.dto.SensorResponse;
-import com.influxdb.client.InfluxDBClient;
-import com.influxdb.client.QueryApi;
+import com.capstone.pethouse.domain.sensor.repository.ChartSensorRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,10 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class ChartServiceTest {
@@ -33,7 +29,7 @@ class ChartServiceTest {
     private DeviceRepository deviceRepository;
 
     @Mock
-    private InfluxDBClient influxDBClient;
+    private ChartSensorRepository chartSensorRepository;
 
     @Test
     @DisplayName("HOUSE 타입 디바이스 - InfluxDB에서 정상적으로 차트 데이터 반환")
@@ -44,10 +40,8 @@ class ChartServiceTest {
 
         SensorResponse res = new SensorResponse(null, "DEV001", 25.0, 60.0, 400.0, "20260518120000");
 
-        QueryApi queryApi = mock(QueryApi.class);
-        given(influxDBClient.getQueryApi()).willReturn(queryApi);
         given(deviceRepository.findBySerialNum("SN-001")).willReturn(Optional.of(device));
-        given(queryApi.query(anyString(), eq(SensorResponse.class))).willReturn(List.of(res));
+        given(chartSensorRepository.getChartData("DEV001", "-24h", "10m")).willReturn(List.of(res));
 
         List<SensorResponse> result = chartService.getChartData("SN-001", "-24h", "10m");
 

@@ -3,7 +3,6 @@ package com.capstone.pethouse.domain.hospital.service;
 import com.capstone.pethouse.domain.code.entity.Code;
 import com.capstone.pethouse.domain.code.repository.CodeRepository;
 import com.capstone.pethouse.domain.hospital.dto.request.HospitalRequest;
-import com.capstone.pethouse.domain.hospital.dto.request.HospitalUpdateRequest;
 import com.capstone.pethouse.domain.hospital.dto.response.HospitalDetailResponse;
 import com.capstone.pethouse.domain.hospital.dto.response.HospitalStatusResponse;
 import com.capstone.pethouse.domain.hospital.entity.Hospital;
@@ -101,7 +100,7 @@ class HospitalServiceTest {
     void updateHospital_Success() {
         // given
         Long seq = 1L;
-        HospitalUpdateRequest request = new HospitalUpdateRequest(
+        HospitalRequest request = new HospitalRequest(
                 "수정 병원", "서울", "02-123-4567",
                 37.5, 127.0,
                 "MED_01", List.of());

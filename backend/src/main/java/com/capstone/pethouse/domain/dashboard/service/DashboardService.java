@@ -183,7 +183,7 @@ public class DashboardService {
                 .orElseThrow(() -> new IllegalArgumentException("장치를 찾을 수 없습니다."));
         Long houseId = device.getPetHouse().getHouseId();
 
-        int size = 20;
+        int size = 200;
         List<FanLog> fanLogs = fanLogRepository.findByPetHouse_HouseId(houseId, PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "createdAt"))).getContent();
         List<SupplyLog> supplyLogs = supplyLogRepository.findByPetHouse_HouseId(houseId, PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "createdAt"))).getContent();
 
@@ -191,20 +191,25 @@ public class DashboardService {
 
         for (FanLog fanLog : fanLogs) {
             String message = String.format("%02d:%02d 환풍기 작동 완료", fanLog.getCreatedAt().getHour(), fanLog.getCreatedAt().getMinute());
+            String details = fanLog.getSpeed() + "% 강도로 가동됨";
             activities.add(ActivityResponse.builder()
                     .type("FAN")
                     .message(message)
                     .timestamp(fanLog.getCreatedAt())
+                    .details(details)
                     .build());
         }
 
         for (SupplyLog supplyLog : supplyLogs) {
             String typeStr = supplyLog.getFeedType() == FeedType.FOOD ? "급식" : "급수";
             String message = String.format("%02d:%02d %s 완료", supplyLog.getCreatedAt().getHour(), supplyLog.getCreatedAt().getMinute(), typeStr);
+            String unit = supplyLog.getFeedType() == FeedType.FOOD ? "g" : "ml";
+            String details = supplyLog.getAmount().stripTrailingZeros().toPlainString() + unit + " 공급됨";
             activities.add(ActivityResponse.builder()
                     .type(supplyLog.getFeedType().name())
                     .message(message)
                     .timestamp(supplyLog.getCreatedAt())
+                    .details(details)
                     .build());
         }
 

@@ -2,8 +2,8 @@ package com.capstone.pethouse.domain.dashboard.service;
 
 import com.capstone.pethouse.domain.User.entity.User;
 import com.capstone.pethouse.domain.User.repository.UserRepository;
-import com.capstone.pethouse.domain.dashboard.dto.request.DashboardRequest.DeviceCreateReq;
-import com.capstone.pethouse.domain.dashboard.dto.response.DashboardResponse.SensorDataRes;
+import com.capstone.pethouse.domain.dashboard.dto.request.DeviceCreateRequest;
+import com.capstone.pethouse.domain.dashboard.dto.response.SensorDataResponse;
 import com.capstone.pethouse.domain.dashboard.repository.DashboardSensorRepository;
 import com.capstone.pethouse.domain.device.entity.Device;
 import com.capstone.pethouse.domain.device.entity.PetHouse;
@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DashboardService 단위 테스트")
@@ -55,11 +56,11 @@ class DashboardServiceTest {
     void getLatestSensorData_Success() {
         // given
         String deviceId = "DEV_01";
-        SensorDataRes expected = new SensorDataRes(deviceId, 25.0, 50.0, 80.0, 400.0, "2026-05-05 16:00:00");
+        SensorDataResponse expected = new SensorDataResponse(deviceId, 25.0, 50.0, 80.0, 400.0, "2026-05-05 16:00:00");
         given(sensorRepository.getLatestSensorData(deviceId)).willReturn(expected);
 
         // when
-        SensorDataRes result = dashboardService.getLatestSensorData(deviceId);
+        SensorDataResponse result = dashboardService.getLatestSensorData(deviceId);
 
         // then
         assertThat(result.deviceId()).isEqualTo(deviceId);
@@ -70,7 +71,7 @@ class DashboardServiceTest {
     @DisplayName("대시보드에서 장치를 생성하고 펫하우스에 연결한다 - 성공")
     void createDevice_Success() {
         // given
-        DeviceCreateReq dto = new DeviceCreateReq(1L, "DEV_01", "user1", "SN_001", "camera");
+        DeviceCreateRequest dto = new DeviceCreateRequest(1L, "DEV_01", "user1", "SN_001", "camera");
         User user = createUser("user1");
         PetHouse petHouse = createPetHouse(1L, user);
         Serial serial = createSerial("SN_001", false);
@@ -84,7 +85,7 @@ class DashboardServiceTest {
 
         // then
         verify(deviceRepository).save(any(Device.class));
-        verify(serialRepository).findBySerialNum("SN_001");
+        verify(serialRepository, times(2)).findBySerialNum("SN_001");
         assertThat(serial.isUse()).isTrue();
     }
 
@@ -92,13 +93,15 @@ class DashboardServiceTest {
     @DisplayName("본인 소유가 아닌 펫하우스에 장치 등록 시 예외가 발생한다")
     void createDevice_NotOwner() {
         // given
-        DeviceCreateReq dto = new DeviceCreateReq(1L, "DEV_01", "user1", "SN_001", "camera");
+        DeviceCreateRequest dto = new DeviceCreateRequest(1L, "DEV_01", "user1", "SN_001", "camera");
         User user1 = createUser("user1");
         User user2 = createUser("user2");
         PetHouse petHouseOfUser2 = createPetHouse(1L, user2);
+        Serial serial = createSerial("SN_001", false);
 
         given(userRepository.findByMemberId("user1")).willReturn(Optional.of(user1));
         given(petHouseRepository.findById(1L)).willReturn(Optional.of(petHouseOfUser2));
+        given(serialRepository.findBySerialNum("SN_001")).willReturn(Optional.of(serial));
 
         // when & then
         assertThatThrownBy(() -> dashboardService.createDevice(dto))
@@ -110,11 +113,13 @@ class DashboardServiceTest {
     @DisplayName("존재하지 않는 펫하우스 ID로 장치 등록 시 예외가 발생한다")
     void createDevice_PetHouseNotFound() {
         // given
-        DeviceCreateReq dto = new DeviceCreateReq(99L, "DEV_01", "user1", "SN_001", "camera");
+        DeviceCreateRequest dto = new DeviceCreateRequest(99L, "DEV_01", "user1", "SN_001", "camera");
         User user = createUser("user1");
+        Serial serial = createSerial("SN_001", false);
 
         given(userRepository.findByMemberId("user1")).willReturn(Optional.of(user));
         given(petHouseRepository.findById(99L)).willReturn(Optional.empty());
+        given(serialRepository.findBySerialNum("SN_001")).willReturn(Optional.of(serial));
 
         // when & then
         assertThatThrownBy(() -> dashboardService.createDevice(dto))

@@ -34,11 +34,50 @@ export function Dashboard() {
   const [sendingVoice, setSendingVoice] = useState(false);
   const [stats, setStats] = useState<DailyStatsRes | null>(null);
   const [activities, setActivities] = useState<ActivityRes[]>([]);
+  const [timeFilter, setTimeFilter] = useState<'1h' | '24h' | '1m' | '3m' | 'all'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [timeFilter, activeHouse.id]);
+
+  const getFilteredActivities = () => {
+    if (timeFilter === 'all') return activities;
+
+    const now = new Date();
+    return activities.filter((activity) => {
+      const activityDate = new Date(activity.timestamp);
+      const diffMs = now.getTime() - activityDate.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+
+      if (timeFilter === '1h') {
+        return diffHours <= 1;
+      }
+      if (timeFilter === '24h') {
+        return diffHours <= 24;
+      }
+      if (timeFilter === '1m') {
+        return diffHours <= 24 * 30;
+      }
+      if (timeFilter === '3m') {
+        return diffHours <= 24 * 90;
+      }
+      return true;
+    });
+  };
+
+  const filteredActivities = getFilteredActivities();
+  const totalPages = Math.max(1, Math.ceil(filteredActivities.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedActivities = filteredActivities.slice(startIndex, startIndex + itemsPerPage);
+
+  useEffect(() => {
+    const targetDeviceId = activeHouse.deviceId || "PET-HOUSE-01";
+
     const fetchSensorData = async () => {
       try {
-        const data = await getLatestSensorData(activeHouse.id);
+        const data = await getLatestSensorData(targetDeviceId);
         setCurrentData(prev => ({
           ...prev,
           co2: data.co2 ?? prev.co2,
@@ -54,8 +93,8 @@ export function Dashboard() {
     const fetchExtraData = async () => {
       try {
         const [activitiesData, statsData] = await Promise.all([
-          getDashboardActivities(activeHouse.id),
-          getDashboardStats(activeHouse.id)
+          getDashboardActivities(targetDeviceId),
+          getDashboardStats(targetDeviceId)
         ]);
         setActivities(activitiesData);
         setStats(statsData);
@@ -73,7 +112,7 @@ export function Dashboard() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [activeHouse.id]);
+  }, [activeHouse.id, activeHouse.deviceId]);
 
   const handleSendOwnerVoice = () => {
     setSendingVoice(true);
@@ -346,13 +385,24 @@ export function Dashboard() {
 
       {/* Recent Activity */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
           <CardTitle>최근 활동</CardTitle>
+          <select
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value as any)}
+            className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 cursor-pointer shadow-xs transition-all hover:border-slate-300"
+          >
+            <option value="1h">1시간 전</option>
+            <option value="24h">하루 전</option>
+            <option value="1m">한달 전</option>
+            <option value="3m">3달 전</option>
+            <option value="all">전체 정보</option>
+          </select>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {activities.length > 0 ? (
-              activities.map((activity, index) => {
+            {paginatedActivities.length > 0 ? (
+              paginatedActivities.map((activity, index) => {
                 const date = new Date(activity.timestamp);
                 const timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
                 const isFan = activity.type === 'FAN';
@@ -367,12 +417,41 @@ export function Dashboard() {
                           {isFan ? '정보' : '완료'}
                         </Badge>
                       </div>
+                      {activity.details && (
+                        <div className="text-xs text-gray-500 mt-1 pl-[2px]">{activity.details}</div>
+                      )}
                     </div>
                   </div>
                 );
               })
             ) : (
               <div className="text-center py-6 text-gray-400">최근 활동 내역이 없습니다.</div>
+            )}
+
+            {filteredActivities.length > itemsPerPage && (
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 transition-all cursor-pointer"
+                >
+                  이전
+                </Button>
+                <span className="text-xs font-semibold text-slate-500">
+                  페이지 {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 transition-all cursor-pointer"
+                >
+                  다음
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>

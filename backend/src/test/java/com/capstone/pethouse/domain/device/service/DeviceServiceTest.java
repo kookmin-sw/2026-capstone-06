@@ -45,7 +45,7 @@ class DeviceServiceTest {
     @DisplayName("장치를 등록한다 - 성공")
     void createDevice_Success() {
         // given
-        DeviceRequest request = new DeviceRequest(null, "user1", "SN_001", "camera", "DEV_01", null);
+        DeviceRequest request = new DeviceRequest(null, "user1", "SN_001", "camera", "DEV_01", null, null, null, null);
         Serial serial = createSerial("SN_001", false);
         User user = createUser("user1");
         Device device = Device.of("DEV_01", user, "SN_001", "camera");
@@ -69,7 +69,7 @@ class DeviceServiceTest {
     @DisplayName("이미 사용 중인 시리얼 번호로 등록 시 예외가 발생한다")
     void createDevice_SerialInUse() {
         // given
-        DeviceRequest request = new DeviceRequest(null, "user1", "SN_001", "camera", "DEV_01", null);
+        DeviceRequest request = new DeviceRequest(null, "user1", "SN_001", "camera", "DEV_01", null, null, null, null);
         Serial serial = createSerial("SN_001", true);
         given(serialRepository.findBySerialNum("SN_001")).willReturn(Optional.of(serial));
 
@@ -83,7 +83,7 @@ class DeviceServiceTest {
     @DisplayName("존재하지 않는 회원 ID로 등록 시 예외가 발생한다")
     void createDevice_UserNotFound() {
         // given
-        DeviceRequest request = new DeviceRequest(null, "non-existent", "SN_001", "camera", "DEV_01", null);
+        DeviceRequest request = new DeviceRequest(null, "non-existent", "SN_001", "camera", "DEV_01", null, null, null, null);
         Serial serial = createSerial("SN_001", false);
         given(serialRepository.findBySerialNum("SN_001")).willReturn(Optional.of(serial));
         given(deviceRepository.existsByDeviceId("DEV_01")).willReturn(false);

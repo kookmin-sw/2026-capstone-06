@@ -4,13 +4,8 @@ import './styles/index.css'
 import App from './App.tsx'
 
 async function enableMocking() {
-  if (process.env.NODE_ENV !== 'development') {
-    return;
-  }
-  const { worker } = await import('./mocks/browser');
-  return worker.start({
-    onUnhandledRequest: 'bypass',
-  });
+  // 실제 백엔드 연동을 위해 MSW 모킹 비활성화
+  return;
 }
 
 enableMocking().then(() => {

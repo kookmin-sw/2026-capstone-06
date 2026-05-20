@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router";
 import {
   Home,
@@ -21,6 +21,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { usePetHouse, type PetHouse, COLOR_MAP, PET_EMOJI } from "../store/petStore";
+import { useAuthStore } from "../store/authStore";
 import { toast } from "sonner";
 
 const PET_TYPE_LABEL: Record<string, string> = {
@@ -163,7 +164,14 @@ const PAGE_TITLES: Record<string, string> = {
 
 export function Layout() {
   const location = useLocation();
-  const { houses, activeHouse, setActiveHouse, removeHouse } = usePetHouse();
+  const { memberId } = useAuthStore();
+  const { houses, activeHouse, setActiveHouse, removeHouse, isLoaded, loadDevicesFromServer } = usePetHouse();
+
+  useEffect(() => {
+    if (!isLoaded && memberId) {
+      loadDevicesFromServer(memberId);
+    }
+  }, [isLoaded, memberId, loadDevicesFromServer]);
   // Desktop: sidebar open/collapsed, Mobile: overlay open/closed
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);

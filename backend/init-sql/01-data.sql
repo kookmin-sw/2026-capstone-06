@@ -238,25 +238,25 @@ VALUES
 
 -- 7. 급식/급수 스케줄 (supply_schedule)
 -- feed_type: FOOD(사료), WATER(물)
--- unit_type: GRAM(그램), ML(밀리리터)
+-- unit_type: G(그램), ML(밀리리터)
 -- cron_expression: Spring Cron 형식
 INSERT IGNORE INTO supply_schedule (id, house_id, feed_type, unit_type, amount, cron_expression, enabled, last_run_at, created_at, modified_at)
 VALUES
-  (1, 1, 'FOOD',  'GRAM', 80.00, '0 0 8 * * *',  true,  NOW() - INTERVAL 1 HOUR,  NOW(), NOW()),
-  (2, 1, 'FOOD',  'GRAM', 80.00, '0 0 18 * * *', true,  NOW() - INTERVAL 1 HOUR,  NOW(), NOW()),
+  (1, 1, 'FOOD',  'G', 80.00, '0 0 8 * * *',  true,  NOW() - INTERVAL 1 HOUR,  NOW(), NOW()),
+  (2, 1, 'FOOD',  'G', 80.00, '0 0 18 * * *', true,  NOW() - INTERVAL 1 HOUR,  NOW(), NOW()),
   (3, 1, 'WATER', 'ML',  200.00, '0 0 9 * * *',  true,  NOW() - INTERVAL 30 MINUTE, NOW(), NOW()),
-  (4, 2, 'FOOD',  'GRAM', 60.00, '0 0 8 * * *',  true,  NULL,                       NOW(), NOW()),
-  (5, 3, 'FOOD',  'GRAM', 50.00, '0 0 7 * * *',  false, NULL,                       NOW(), NOW()),
+  (4, 2, 'FOOD',  'G', 60.00, '0 0 8 * * *',  true,  NULL,                       NOW(), NOW()),
+  (5, 3, 'FOOD',  'G', 50.00, '0 0 7 * * *',  false, NULL,                       NOW(), NOW()),
   (6, 3, 'WATER', 'ML',  150.00, '0 0 12 * * *', true,  NOW() - INTERVAL 2 HOUR,   NOW(), NOW());
 
 -- 7-1. 급식/급수 로그 (supply_log)
 INSERT IGNORE INTO supply_log (id, schedule_id, house_id, feed_type, unit_type, amount, execution_status, trigger_type, created_at)
 VALUES
-  (1,  1, 1, 'FOOD',  'GRAM', 80.00, 'SUCCESS',    'AUTO',   NOW() - INTERVAL 2 DAY),
-  (2,  1, 1, 'FOOD',  'GRAM', 80.00, 'SUCCESS',    'AUTO',   NOW() - INTERVAL 1 DAY),
-  (3,  2, 1, 'FOOD',  'GRAM', 80.00, 'SUCCESS',    'AUTO',   NOW() - INTERVAL 1 DAY),
+  (1,  1, 1, 'FOOD',  'G', 80.00, 'SUCCESS',    'AUTO',   NOW() - INTERVAL 2 DAY),
+  (2,  1, 1, 'FOOD',  'G', 80.00, 'SUCCESS',    'AUTO',   NOW() - INTERVAL 1 DAY),
+  (3,  2, 1, 'FOOD',  'G', 80.00, 'SUCCESS',    'AUTO',   NOW() - INTERVAL 1 DAY),
   (4,  3, 1, 'WATER', 'ML',  200.00, 'SUCCESS',    'AUTO',   NOW() - INTERVAL 1 DAY),
-  (5, NULL,1, 'FOOD',  'GRAM',120.00, 'SUCCESS',    'MANUAL', NOW() - INTERVAL 3 HOUR),
+  (5, NULL,1, 'FOOD',  'G', 120.00, 'SUCCESS',    'MANUAL', NOW() - INTERVAL 3 HOUR),
   (6, NULL,1, 'WATER', 'ML',  100.00, 'PROCEEDING', 'MANUAL', NOW() - INTERVAL 10 MINUTE),
-  (7,  4, 2, 'FOOD',  'GRAM', 60.00, 'SUCCESS',    'AUTO',   NOW() - INTERVAL 1 DAY),
+  (7,  4, 2, 'FOOD',  'G', 60.00, 'SUCCESS',    'AUTO',   NOW() - INTERVAL 1 DAY),
   (8,  6, 3, 'WATER', 'ML',  150.00, 'FAILED',     'AUTO',   NOW() - INTERVAL 2 DAY);
