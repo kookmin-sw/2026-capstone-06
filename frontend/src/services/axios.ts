@@ -4,12 +4,26 @@ import { useAuthStore } from '../store/authStore';
 /**
  * Axios 인스턴스 생성
  *
- * - baseURL: Vite 환경변수 VITE_API_BASE_URL에서 가져옴 (기본값: /api)
+ * - baseURL: Vite 환경변수 VITE_API_ENDPOINT에서 가져옴
+ * - 개발: http://localhost:8081
+ * - 프로덕션: https://ec2-3-35-226-221.ap-northeast-2.compute.amazonaws.com:8081
  * - timeout: 10초
  * - 요청/응답 인터셉터를 통한 JWT 자동 주입 및 에러 처리
  */
+const getBaseURL = () => {
+  const apiEndpoint = import.meta.env.VITE_API_ENDPOINT;
+  if (apiEndpoint) {
+    return apiEndpoint;
+  }
+  // 기본값
+  if (import.meta.env.PROD) {
+    return 'http://ec2-3-35-226-221.ap-northeast-2.compute.amazonaws.com:8081';
+  }
+  return 'http://localhost:8081';
+};
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: getBaseURL(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
