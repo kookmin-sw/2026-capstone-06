@@ -50,3 +50,5 @@ keys/capstone-server-key.pem
 scratch/
 
 backend_logs.txt
+
+keys/

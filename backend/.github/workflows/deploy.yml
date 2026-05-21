@@ -44,3 +44,28 @@ jobs:
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@master
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        envs: ECR_REGISTRY, ECR_REPOSITORY, AWS_REGION
+        script: |
+          # ECR 로그인
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+          
+          # 최신 이미지 Pull
+          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          # 기존 컨테이너 중지 및 삭제 (이름이 backend-container라고 가정)
+          docker stop backend-container || true
+          docker rm backend-container || true
+          
+          # 최신 이미지로 새 컨테이너 실행 (8080 포트 사용 가정)
+          docker run -d --name backend-container -p 8080:8080 $ECR_REGISTRY/$ECR_REPOSITORY:latest
