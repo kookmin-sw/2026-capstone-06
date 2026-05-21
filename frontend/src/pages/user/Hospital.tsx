@@ -134,6 +134,11 @@ function MapController({
 }) {
     const map = useMap();
     useEffect(() => {
+        // Validate coordinates before flyTo
+        if (isNaN(center[0]) || isNaN(center[1]) || !isFinite(center[0]) || !isFinite(center[1])) {
+            console.warn('[MapController] Invalid coordinates:', center);
+            return;
+        }
         map.flyTo(center, zoom, { animate: true, duration: 0.8 });
     }, [center, zoom, map]);
     return null;
@@ -168,7 +173,7 @@ function HospitalDetail({
     return (
         <div className="flex flex-col h-full">
             {/* Back button */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 flex-shrink-0">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 shrink-0">
                 <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 px-2 text-gray-600">
                     <ChevronLeft className="w-4 h-4" />
                     목록으로
@@ -180,7 +185,7 @@ function HospitalDetail({
                 <div>
                     <div className="flex items-start justify-between gap-2">
                         <h3 className="font-bold text-gray-900 text-lg leading-tight">{hospital.name}</h3>
-                        <span className="flex-shrink-0 text-sm font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                        <span className="shrink-0 text-sm font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
                             {formatDistance(distance)}
                         </span>
                     </div>
@@ -197,19 +202,19 @@ function HospitalDetail({
                 {/* Info rows */}
                 <div className="space-y-2">
                     <div className="flex items-start gap-2.5 p-3 bg-gray-50 rounded-xl">
-                        <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <MapPin className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                         <span className="text-sm text-gray-700">{hospital.location}</span>
                     </div>
                     <a
                         href={`tel:${hospital.phone}`}
                         className="flex items-center gap-2.5 p-3 bg-green-50 border border-green-100 rounded-xl hover:bg-green-100 transition-colors"
                     >
-                        <Phone className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        <Phone className="w-4 h-4 text-green-600 shrink-0" />
                         <span className="text-sm font-semibold text-green-700">{hospital.phone}</span>
                         <span className="ml-auto text-xs text-green-600 font-medium">전화걸기 →</span>
                     </a>
                     <div className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-xl">
-                        <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <Clock className="w-4 h-4 text-gray-400 shrink-0" />
                         <span className="text-sm text-gray-600">등록일: {new Date(hospital.regDate).toLocaleDateString("ko-KR")}</span>
                     </div>
                 </div>
@@ -264,7 +269,7 @@ function HospitalCard({
         >
             <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2 min-w-0">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? "bg-blue-500" : "bg-gray-100"
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? "bg-blue-500" : "bg-gray-100"
                         }`}>
                         <span className="text-base">🏥</span>
                     </div>
@@ -272,7 +277,7 @@ function HospitalCard({
                         {hospital.name}
                     </span>
                 </div>
-                <span className={`flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${hospital.distance < 1
+                <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${hospital.distance < 1
                     ? "bg-green-100 text-green-700"
                     : hospital.distance < 3
                         ? "bg-blue-100 text-blue-700"
@@ -283,7 +288,7 @@ function HospitalCard({
             </div>
 
             <div className="flex items-start gap-1.5 text-xs text-gray-500 mb-2">
-                <MapPin className="w-3 h-3 flex-shrink-0 mt-0.5 text-gray-400" />
+                <MapPin className="w-3 h-3 shrink-0 mt-0.5 text-gray-400" />
                 <span className="line-clamp-1">{hospital.location}</span>
             </div>
 
@@ -328,7 +333,16 @@ export function HospitalPage() {
             try {
                 const page = await getHospitalList({ size: 100 });
                 if (page.content && page.content.length > 0) {
-                    setHospitals(page.content);
+                    // Filter out hospitals with invalid coordinates
+                    const validHospitals = page.content.filter(h => 
+                        !isNaN(h.latitude) && !isNaN(h.longitude) &&
+                        isFinite(h.latitude) && isFinite(h.longitude)
+                    );
+                    if (validHospitals.length > 0) {
+                        setHospitals(validHospitals);
+                    } else {
+                        console.warn('[Hospital] All hospitals have invalid coordinates');
+                    }
                 }
             } catch {
                 // API 실패 시 기존 mock 데이터 유지
@@ -405,8 +419,16 @@ export function HospitalPage() {
 
     const handleSelectHospital = (hospital: HospitalWithDistance) => {
         setSelectedHospital(hospital);
-        setMapCenter([hospital.latitude, hospital.longitude]);
-        setMapZoom(16);
+        // Validate coordinates before setting map center
+        if (!isNaN(hospital.latitude) && !isNaN(hospital.longitude) && 
+            isFinite(hospital.latitude) && isFinite(hospital.longitude)) {
+            setMapCenter([hospital.latitude, hospital.longitude]);
+            setMapZoom(16);
+        } else {
+            console.warn('[Hospital] Invalid hospital coordinates:', hospital);
+            toast.error("병원 위치 정보가 올바르지 않습니다");
+            return;
+        }
         setMobileView("map");
         fetchMedList(hospital.seq); // API에서 진료과목 상세 가져오기
     };
@@ -441,7 +463,7 @@ export function HospitalPage() {
                             : "위치를 허용하면 가까운 순서로 정렬됩니다"}
                     </p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                     {locationError && (
                         <span className="text-xs text-red-600 flex items-center gap-1">
                             <AlertCircle className="w-3.5 h-3.5" /> 위치 권한 필요
@@ -502,7 +524,7 @@ export function HospitalPage() {
             <div className="flex gap-4" style={{ height: "calc(100vh - 320px)", minHeight: "520px" }}>
 
                 {/* ── Left panel ── */}
-                <div className={`flex-shrink-0 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden w-full lg:w-[340px] xl:w-[380px] ${mobileView === "map" ? "hidden lg:flex" : "flex"
+                <div className={`shrink-0 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden w-full lg:w-85 xl:w-95 ${mobileView === "map" ? "hidden lg:flex" : "flex"
                     }`}>
                     {selectedHospital ? (
                         // Detail view
@@ -516,7 +538,7 @@ export function HospitalPage() {
                         // List view
                         <>
                             {/* Search + filters */}
-                            <div className="px-4 pt-4 pb-3 border-b border-gray-100 space-y-3 flex-shrink-0">
+                            <div className="px-4 pt-4 pb-3 border-b border-gray-100 space-y-3 shrink-0">
                                 <div className="relative">
                                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                     <Input
@@ -604,7 +626,7 @@ export function HospitalPage() {
                                 )}
                             </div>
 
-                            <div className="px-4 py-2 border-t border-gray-100 text-xs text-gray-400 text-center flex-shrink-0">
+                            <div className="px-4 py-2 border-t border-gray-100 text-xs text-gray-400 text-center shrink-0">
                                 {userLocation ? "📍 현재 위치 기준 거리순 정렬" : "📍 기본 위치 기준 (분당구)"}
                             </div>
                         </>
@@ -636,7 +658,13 @@ export function HospitalPage() {
                         )}
 
                         {/* Hospital markers */}
-                        {filtered.map((hospital) => (
+                        {filtered.map((hospital) => {
+                            // Skip markers with invalid coordinates
+                            if (isNaN(hospital.latitude) || isNaN(hospital.longitude) ||
+                                !isFinite(hospital.latitude) || !isFinite(hospital.longitude)) {
+                                return null;
+                            }
+                            return (
                             <Marker
                                 key={hospital.seq}
                                 position={[hospital.latitude, hospital.longitude]}
@@ -649,7 +677,7 @@ export function HospitalPage() {
                                 }}
                             >
                                 <Popup>
-                                    <div className="min-w-[160px]">
+                                    <div className="min-w-40">
                                         <div className="font-bold text-gray-900 mb-1">{hospital.name}</div>
                                         <div className="text-xs text-gray-500 mb-1.5">{hospital.location}</div>
                                         <div className="flex items-center justify-between gap-2">
@@ -671,33 +699,34 @@ export function HospitalPage() {
                                     </div>
                                 </Popup>
                             </Marker>
-                        ))}
+                            );
+                        })}
                     </MapContainer>
 
                     {/* Map overlay legend */}
-                    <div className="absolute bottom-4 right-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-3 text-xs space-y-1.5">
+                    <div className="absolute bottom-4 right-4 z-1000 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-3 text-xs space-y-1.5">
                         <div className="font-semibold text-gray-700 mb-2">범례</div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow-sm flex-shrink-0" />
+                            <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow-sm shrink-0" />
                             <span className="text-gray-600">내 위치</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-sm bg-blue-600 flex-shrink-0" />
+                            <div className="w-4 h-4 rounded-sm bg-blue-600 shrink-0" />
                             <span className="text-gray-600">일반 병원</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-sm bg-red-600 flex-shrink-0" />
+                            <div className="w-4 h-4 rounded-sm bg-red-600 shrink-0" />
                             <span className="text-gray-600">응급 병원</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-sm bg-green-600 flex-shrink-0" />
+                            <div className="w-4 h-4 rounded-sm bg-green-600 shrink-0" />
                             <span className="text-gray-600">선택된 병원</span>
                         </div>
                     </div>
 
                     {/* Selected hospital quick info overlay (map view only) */}
                     {selectedHospital && mobileView === "map" && (
-                        <div className="absolute bottom-4 left-4 right-20 z-[1000] lg:hidden">
+                        <div className="absolute bottom-4 left-4 right-20 z-1000 lg:hidden">
                             <Card className="shadow-xl border-blue-200 bg-white/98 backdrop-blur-sm">
                                 <CardContent className="p-3">
                                     <div className="flex items-start gap-2">
@@ -711,7 +740,7 @@ export function HospitalPage() {
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="flex flex-col gap-1 flex-shrink-0">
+                                        <div className="flex flex-col gap-1 shrink-0">
                                             <button
                                                 onClick={() => setMobileView("list")}
                                                 className="text-xs bg-blue-600 text-white px-2 py-1 rounded-lg"

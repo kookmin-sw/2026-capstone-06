@@ -64,6 +64,21 @@ export const handlers = [
     });
   }),
 
+  http.post(`${baseURL}/devices/:houseId/supplier/record`, async ({ request }) => {
+    const body = await request.json() as any;
+    // 로컬 시간으로 저장 (Z 없음)
+    const now = new Date();
+    const localISOString = now.toISOString().replace('Z', '');
+    const newRecord = {
+      ...body,
+      createdAt: localISOString,
+      executionStatus: 'SUCCESS',
+    };
+    // Mock 이력에 추가
+    MOCK_SUPPLY_HISTORY.unshift(newRecord);
+    return HttpResponse.json(newRecord);
+  }),
+
 
 
   // Statistics

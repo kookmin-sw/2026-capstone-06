@@ -34,6 +34,7 @@ public class SupplyService {
     private final PetHouseRepository petHouseRepository;
     private final SupplyScheduleRepository supplyScheduleRepository;
     private final MqttCommandService mqttCommandService;
+    private final DynamicSupplyScheduler dynamicSupplyScheduler;
 
     @Transactional(readOnly = true)
     public Page<SupplyScheduleResponse> getSupplySchedules(Long houseId, Pageable pageable) {
@@ -56,7 +57,12 @@ public class SupplyService {
                 supplyScheduleRequest.cronExpression()
         );
 
-        return SupplyScheduleResponse.from(supplyScheduleRepository.save(supplySchedule));
+        SupplySchedule savedSchedule = supplyScheduleRepository.save(supplySchedule);
+        
+        // 새로 생성된 스케줄을 메모리에 등록하여 알람 세팅
+        dynamicSupplyScheduler.startSchedule(savedSchedule);
+
+        return SupplyScheduleResponse.from(savedSchedule);
     }
 
     public SupplyScheduleResponse updateSupplySchedule(Long houseId, Long scheduleId, SupplyScheduleRequest supplyScheduleRequest) {
@@ -74,6 +80,9 @@ public class SupplyService {
                 supplyScheduleRequest.cronExpression()
         );
 
+        // 변경된 스케줄을 메모리에 다시 세팅 (기존 타이머 취소 후 새 타이머 등록)
+        dynamicSupplyScheduler.startSchedule(supplySchedule);
+
         return SupplyScheduleResponse.from(supplySchedule);
     }
 
@@ -83,6 +92,13 @@ public class SupplyService {
 
         supplySchedule.toggleSupplySchedule(enabled);
 
+        // 토글 상태에 따라 타이머 시작 또는 중지
+        if (enabled) {
+            dynamicSupplyScheduler.startSchedule(supplySchedule);
+        } else {
+            dynamicSupplyScheduler.stopSchedule(supplySchedule.getId());
+        }
+
         return SupplyToggleResponse.from(supplySchedule);
     }
 
@@ -91,6 +107,9 @@ public class SupplyService {
                 .orElseThrow(() -> new EntityNotFoundException("해당 스케줄을 찾을 수 없습니다."));
 
         supplyScheduleRepository.delete(supplySchedule);
+
+        // DB에서 삭제되었으므로 알람 타이머도 해제
+        dynamicSupplyScheduler.stopSchedule(scheduleId);
 
         return supplySchedule.getId();
     }

@@ -66,17 +66,17 @@ export const MOCK_SUPPLY_SCHEDULES: SupplyScheduleResponse[] = [
 ];
 
 export const MOCK_SUPPLY_HISTORY: SupplyLogHistoryResponse[] = [
-  { houseId: 1, scheduleId: null, feedType: 'WATER', unitType: 'ml', amount: 200, triggerType: 'MANUAL', executionStatus: 'SUCCESS', createdAt: '2026-03-15T14:23:00' },
-  { houseId: 1, scheduleId: 1, feedType: 'FOOD', unitType: 'g', amount: 100, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-03-15T12:00:00' },
-  { houseId: 1, scheduleId: 3, feedType: 'WATER', unitType: 'ml', amount: 200, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-03-15T09:00:00' },
-  { houseId: 1, scheduleId: 1, feedType: 'FOOD', unitType: 'g', amount: 100, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-03-15T08:00:00' },
-  { houseId: 1, scheduleId: 5, feedType: 'WATER', unitType: 'ml', amount: 200, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-03-14T21:00:00' },
+  { houseId: 1, scheduleId: null, feedType: 'FOOD', unitType: 'g', amount: 100, triggerType: 'MANUAL', executionStatus: 'SUCCESS', createdAt: '2026-05-21T13:30:00' },
+  { houseId: 1, scheduleId: 1, feedType: 'FOOD', unitType: 'g', amount: 100, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-05-21T08:00:00' },
+  { houseId: 1, scheduleId: 3, feedType: 'WATER', unitType: 'ml', amount: 200, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-05-20T15:00:00' },
+  { houseId: 1, scheduleId: 1, feedType: 'FOOD', unitType: 'g', amount: 100, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-05-20T08:00:00' },
+  { houseId: 1, scheduleId: 5, feedType: 'WATER', unitType: 'ml', amount: 200, triggerType: 'AUTO', executionStatus: 'SUCCESS', createdAt: '2026-05-19T21:00:00' },
 ];
 
 export const MOCK_VENTILATION_HISTORY = [
-  { id: '1', timestamp: '2026-03-15T14:30:00', duration: 10, intensity: 70, mode: 'auto', trigger: '온도 26°C 도달 (강도 70%)' },
-  { id: '2', timestamp: '2026-03-15T11:30:00', duration: 15, intensity: 80, mode: 'manual' },
-  { id: '5', timestamp: '2026-03-14T13:10:00', duration: 8, intensity: 50, mode: 'manual' },
+  { id: '1', timestamp: '2026-05-21T13:30:00', duration: 10, intensity: 70, mode: 'auto', trigger: '온도 26°C 도달 (강도 70%)' },
+  { id: '2', timestamp: '2026-05-21T11:30:00', duration: 15, intensity: 80, mode: 'manual' },
+  { id: '5', timestamp: '2026-05-20T13:10:00', duration: 8, intensity: 50, mode: 'manual' },
 ];
 
 

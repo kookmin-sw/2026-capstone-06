@@ -44,7 +44,11 @@ function toSchedule(res: SupplyScheduleResponse): Schedule {
   try {
     const parts = res.cronExpression.split(' ');
     if (parts.length >= 3) {
-      time = `${parts[2].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+      const utcHour = parseInt(parts[2]);
+      // UTC를 한국 시간으로 변환 (UTC+9)
+      const localHour = (utcHour + 9) % 24;
+      const minute = parts[1];
+      time = `${String(localHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
     }
   } catch { /* mock time 유지 */ }
 
@@ -190,7 +194,15 @@ export function FeedWater() {
     if (!activeHouse?.id) return;
     try {
       const [hours, minutes] = newSchedule.time.split(':');
-      const cronExpression = `0 ${minutes} ${hours} * * ?`;
+      // UTC 변환 (한국 = UTC+9)
+      const utcHours = (parseInt(hours) - 9 + 24) % 24;
+      const cronExpression = `0 ${minutes} ${utcHours} * * ?`;
+      
+      console.log('[FeedWater] 스케줄 저장:', { 
+        localTime: newSchedule.time, 
+        utcHours, 
+        cronExpression 
+      });
       
       await supplyApi.createSupplySchedule(activeHouse.id, {
         feedType: newSchedule.type === 'feed' ? 'FOOD' : 'WATER',
@@ -226,7 +238,15 @@ export function FeedWater() {
     if (!editingSchedule || !activeHouse?.id) return;
     try {
       const [hours, minutes] = editingSchedule.time.split(':');
-      const cronExpression = `0 ${minutes} ${hours} * * ?`;
+      // UTC 변환 (한국 = UTC+9)
+      const utcHours = (parseInt(hours) - 9 + 24) % 24;
+      const cronExpression = `0 ${minutes} ${utcHours} * * ?`;
+      
+      console.log('[FeedWater] 스케줄 수정:', { 
+        localTime: editingSchedule.time, 
+        utcHours, 
+        cronExpression 
+      });
       
       await supplyApi.updateSupplySchedule(activeHouse.id, Number(editingSchedule.id), {
         feedType: editingSchedule.type === 'feed' ? 'FOOD' : 'WATER',
@@ -257,10 +277,22 @@ export function FeedWater() {
   };
 
   const formatDateTime = (timestamp: string) => {
+    // 로컬 시간 문자열 그대로 처리 (Z 없음 = 로컬 시간)
     const date = new Date(timestamp);
+    
+    // 로컬 시간대로 포맷 (ISO 문자열이 로컬 시간이므로)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    // 12시간 형식 변환
+    const hour12 = date.getHours() % 12 || 12;
+    const ampm = date.getHours() >= 12 ? '오후' : '오전';
+    
     return {
-      date: date.toLocaleDateString('ko-KR'),
-      time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+      date: `${year}.${month}.${day}`,
+      time: `${ampm} ${String(hour12).padStart(2, '0')}:${minutes}`,
     };
   };
 
