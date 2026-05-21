@@ -17,7 +17,7 @@ const getBaseURL = () => {
   }
   // 기본값
   if (import.meta.env.PROD) {
-    return 'https://ec2-3-35-226-221.ap-northeast-2.compute.amazonaws.com:8081';
+    return 'http://ec2-3-35-226-221.ap-northeast-2.compute.amazonaws.com:8081';
   }
   return 'http://localhost:8081';
 };
