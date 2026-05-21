@@ -68,9 +68,18 @@ jobs:
           # 최신 이미지 Pull
           docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
           
-          # 기존 컨테이너 중지 및 삭제 (이름이 backend-container라고 가정)
-          docker stop backend-container || true
-          docker rm backend-container || true
+          # 기존 컨테이너 중지 및 삭제
+          docker stop pet-house-app || true
+          docker rm pet-house-app || true
           
-          # 최신 이미지로 새 컨테이너 실행 (8080 포트 사용 가정)
-          docker run -d --name backend-container -p 8080:8080 $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          # 최신 이미지로 새 컨테이너 실행 (EC2 내부의 도커 네트워크 및 환경변수 연동)
+          docker run -d \
+            --name pet-house-app \
+            --network backend_default \
+            -p 8081:8080 \
+            --env-file /home/ec2-user/2026-capstone-06/backend/.env \
+            -e SPRING_DATASOURCE_URL="jdbc:mysql://db:3306/pet_house_db?serverTimezone=Asia/Seoul&createDatabaseIfNotExist=true" \
+            -e MQTT_BROKER_URL="tcp://emqx:1883" \
+            -e INFLUXDB_URL="http://influxdb:8086" \
+            -e KAFKA_BROKER_URL="kafka:9092" \
+            $ECR_REGISTRY/$ECR_REPOSITORY:latest

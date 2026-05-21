@@ -4,7 +4,7 @@ import time
 
 import paho.mqtt.client as mqtt
 
-BROKER_ADDRESS = "127.0.0.1"
+BROKER_ADDRESS = "3.35.226.221"
 BROKER_PORT = 1883
 
 HOUSE_ID = 9
