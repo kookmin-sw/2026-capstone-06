@@ -7,8 +7,8 @@ import paho.mqtt.client as mqtt
 BROKER_ADDRESS = "127.0.0.1"
 BROKER_PORT = 1883
 
-HOUSE_ID = 8
-DEVICE_ID = "DEV-20260520-DEV-501"
+HOUSE_ID = 9
+DEVICE_ID = "DEV-20260520-DEV-122"
 
 TOPIC_PUB_SENSOR = f"pet/{HOUSE_ID}/sensor/data"
 TOPIC_SUB_COMMAND = f"pet/{HOUSE_ID}/device/command"
@@ -102,8 +102,8 @@ def main():
         while True:
             sensor_data = {
                 "device_id": DEVICE_ID,
-                "tem_val": round(random.uniform(20.0, 25.0), 1),
-                "hum_val": round(random.uniform(40.0, 60.0), 1),
+                "tem_val": round(random.uniform(10.0, 60.0), 1),
+                "hum_val": round(random.uniform(10.0, 60.0), 1),
                 "co_val": round(random.uniform(400.0, 500.0), 1),
             }
             payload = json.dumps(sensor_data)
