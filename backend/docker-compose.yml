@@ -76,6 +76,7 @@ services:
       INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
       KAFKA_BROKER_URL: kafka:9092    # Docker 내부 → kafka:9092 사용
       TZ: Asia/Seoul
+      SERVER_PORT: 8080
 
   ngrinder-controller:
     image: ngrinder/controller:latest
