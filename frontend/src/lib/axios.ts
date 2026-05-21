@@ -1,8 +1,15 @@
 import axios from 'axios';
 
 // 1. 인스턴스 생성
+const getBaseURL = () => {
+  if (import.meta.env.PROD) {
+    return 'http://ec2-3-35-226-221.ap-northeast-2.compute.amazonaws.com:8081';
+  }
+  return 'http://localhost:8081';
+};
+
 const api = axios.create({
-  baseURL: 'https://api.your-pet-app.com', // 서버 주소
+  baseURL: getBaseURL(),
   timeout: 5000, // 5초 넘으면 에러
   headers: {
     'Content-Type': 'application/json',
