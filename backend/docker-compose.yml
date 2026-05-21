@@ -53,7 +53,7 @@ services:
       EMQX_LISTENERS__TCP__DEFAULT__MAX_CONNECTIONS: 1024000
 
   app:
-    build: .
+    image: 720546261301.dkr.ecr.ap-northeast-2.amazonaws.com/pet-house-app:latest
     container_name: pet-house-app
     ports:
       - "8081:8080"
