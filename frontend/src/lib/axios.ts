@@ -2,10 +2,7 @@ import axios from 'axios';
 
 // 1. 인스턴스 생성
 const getBaseURL = () => {
-  if (import.meta.env.PROD) {
-    return 'http://ec2-3-35-226-221.ap-northeast-2.compute.amazonaws.com:8081';
-  }
-  return 'http://localhost:8081';
+  return import.meta.env.VITE_API_BASE_URL || '/api';
 };
 
 const api = axios.create({
