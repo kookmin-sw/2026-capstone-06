@@ -85,7 +85,7 @@ services:
     ports:
       - "8090:80"
       - "16001:16001"
-      - "12000-12009:12000-12009"
+      - 12000-12009:12000-12009
     volumes:
       - ngrinder_controller_data:/opt/ngrinder-controller
 
