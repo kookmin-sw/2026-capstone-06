@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore';
  *
  * - baseURL: Vite 환경변수 VITE_API_ENDPOINT에서 가져옴
  * - 개발: http://localhost:8081
- * - 프로덕션: https://ec2-3-35-226-221.ap-northeast-2.compute.amazonaws.com:8081
+ * - 프로덕션: 프록시(/api)를 통해 Vercel에서 EC2로 포워딩
  * - timeout: 10초
  * - 요청/응답 인터셉터를 통한 JWT 자동 주입 및 에러 처리
  */
@@ -16,10 +16,7 @@ const getBaseURL = () => {
     return apiEndpoint;
   }
   // 기본값
-  if (import.meta.env.PROD) {
-    return 'http://ec2-3-35-226-221.ap-northeast-2.compute.amazonaws.com:8081';
-  }
-  return 'http://localhost:8081';
+  return import.meta.env.VITE_API_BASE_URL || '/api';
 };
 
 const apiClient = axios.create({
