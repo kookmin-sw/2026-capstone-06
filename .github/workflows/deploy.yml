@@ -75,19 +75,17 @@ jobs:
           mkdir -p /home/ec2-user/2026-capstone-06/backend
           if [ ! -f /home/ec2-user/2026-capstone-06/backend/.env ]; then
             echo "Creating default .env file..."
-            cat << 'EOF' > /home/ec2-user/2026-capstone-06/backend/.env
-MYSQL_ROOT_PASSWORD=root
-DB_USERNAME=pet_house
-DB_PASSWORD=pet_house_pass
-INFLUXDB_USERNAME=admin
-INFLUXDB_PASSWORD=adminpassword
-INFLUXDB_ORG=pethouse
-INFLUXDB_BUCKET=sensor_data
-INFLUXDB_TOKEN=dev-token
-MQTT_USERNAME=
-MQTT_PASSWORD=
-KAFKA_BROKER_URL=localhost:9092
-EOF
+            echo "MYSQL_ROOT_PASSWORD=root" > /home/ec2-user/2026-capstone-06/backend/.env
+            echo "DB_USERNAME=pet_house" >> /home/ec2-user/2026-capstone-06/backend/.env
+            echo "DB_PASSWORD=pet_house_pass" >> /home/ec2-user/2026-capstone-06/backend/.env
+            echo "INFLUXDB_USERNAME=admin" >> /home/ec2-user/2026-capstone-06/backend/.env
+            echo "INFLUXDB_PASSWORD=adminpassword" >> /home/ec2-user/2026-capstone-06/backend/.env
+            echo "INFLUXDB_ORG=pethouse" >> /home/ec2-user/2026-capstone-06/backend/.env
+            echo "INFLUXDB_BUCKET=sensor_data" >> /home/ec2-user/2026-capstone-06/backend/.env
+            echo "INFLUXDB_TOKEN=dev-token" >> /home/ec2-user/2026-capstone-06/backend/.env
+            echo "MQTT_USERNAME=" >> /home/ec2-user/2026-capstone-06/backend/.env
+            echo "MQTT_PASSWORD=" >> /home/ec2-user/2026-capstone-06/backend/.env
+            echo "KAFKA_BROKER_URL=localhost:9092" >> /home/ec2-user/2026-capstone-06/backend/.env
           fi
 
           # 2. ECR 로그인
