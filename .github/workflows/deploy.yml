@@ -62,24 +62,17 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         envs: ECR_REGISTRY, ECR_REPOSITORY, AWS_REGION
         script: |
-          # ECR 로그인
+          # 1. ECR 로그인
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
           
-          # 최신 이미지 Pull
-          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          # 2. 컴포즈 파일이 있는 위치로 이동
+          cd /home/ec2-user/2026-capstone-06/backend
           
-          # 기존 컨테이너 중지 및 삭제
-          docker stop pet-house-app || true
-          docker rm pet-house-app || true
+          # 3. 새로운 스프링 부트 최신 이미지 Pull
+          docker compose pull app
           
-          # 최신 이미지로 새 컨테이너 실행 (EC2 내부의 도커 네트워크 및 환경변수 연동)
-          docker run -d \
-            --name pet-house-app \
-            --network backend_default \
-            -p 8081:8080 \
-            --env-file /home/ec2-user/2026-capstone-06/backend/.env \
-            -e SPRING_DATASOURCE_URL="jdbc:mysql://db:3306/pet_house_db?serverTimezone=Asia/Seoul&createDatabaseIfNotExist=true" \
-            -e MQTT_BROKER_URL="tcp://emqx:1883" \
-            -e INFLUXDB_URL="http://influxdb:8086" \
-            -e KAFKA_BROKER_URL="kafka:9092" \
-            $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          # 4. app 컨테이너만 무중단 교체 및 재시작 (DB나 Kafka 등 다른 서비스들은 유지됨)
+          docker compose up -d app
+          
+          # 5. 사용하지 않는 구버전 이미지 청소 (디스크 용량 관리)
+          docker image prune -f
