@@ -20,7 +20,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://ec2-3-38-31-77.ap-northeast-2.compute.amazonaws.com:8081',
+        target: 'http://ec2-54-116-38-250.ap-northeast-2.compute.amazonaws.com:8081',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
         ws: true,
