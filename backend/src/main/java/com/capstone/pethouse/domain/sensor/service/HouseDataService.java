@@ -19,10 +19,20 @@ public class HouseDataService {
     private final SensorPushService sensorPushService;
 
     /**
-     * HTTP/MQTT 양쪽에서 호출. InfluxDB write + WebSocket push.
+     * InfluxDB 시계열 저장 전담
      */
     @Transactional
-    public SensorResponse create(HouseDataRequest request) {
+    public void save(HouseDataRequest request) {
+        if (request.deviceId() == null || request.deviceId().isBlank()) {
+            throw new IllegalArgumentException("device_id는 필수입니다.");
+        }
+        influxWriter.writeHouse(request.deviceId(), request.temVal(), request.humVal(), request.coVal());
+    }
+
+    /**
+     * WebSocket 실시간 푸시 전담
+     */
+    public SensorResponse push(HouseDataRequest request) {
         if (request.deviceId() == null || request.deviceId().isBlank()) {
             throw new IllegalArgumentException("device_id는 필수입니다.");
         }
@@ -36,12 +46,16 @@ public class HouseDataService {
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
         );
 
-        // InfluxDB 시계열 저장
-        influxWriter.writeHouse(request.deviceId(), request.temVal(), request.humVal(), request.coVal());
-
-        // WebSocket 실시간 푸시
         sensorPushService.pushHouse(sensorResponse);
-
         return sensorResponse;
+    }
+
+    /**
+     * 하위 호환성을 위해 유지 (저장 + 푸시)
+     */
+    @Transactional
+    public SensorResponse create(HouseDataRequest request) {
+        save(request);
+        return push(request);
     }
 }
